@@ -1,0 +1,22 @@
+[general]
+name=QGIS DevTools
+qgisMinimumVersion=3.22
+qgisMaximumVersion=3.99
+description=description
+about=about
+version=1.0.0
+author=NextGIS
+email=info@nextgis.com
+
+tags=debugging,development,tools
+
+homepage=https://github.com/nextgis/qgis_devtools
+tracker=https://github.com/nextgis/qgis_devtools/issues
+repository=https://github.com/nextgis/qgis_devtools
+icon=resources/icons/devtools_logo.svg
+experimental=False
+deprecated=False
+
+changelog=
+    1.0.0:
+        * Initial release
