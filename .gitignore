@@ -257,3 +257,5 @@ compile_commands.json
 
 .vscode/launch.json
 .vscode/tasks.json
+
+.github/copilot-instructions.md
