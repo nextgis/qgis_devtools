@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Commercial support
+    url: https://nextgis.com/contact/?utm_source=qgis_plugin&utm_medium=issues&utm_campaign=constant&utm_term=devtools
+    about: We provide custom development and support for this software. Contact us to discuss options!
