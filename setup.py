@@ -663,7 +663,7 @@ class QgisPluginBuilder:
 
         new_configurations = [
             {
-                "name": "Attach QGIS",
+                "name": "Attach to QGIS",
                 "type": "debugpy",
                 "request": "attach",
                 "connect": {"host": "localhost", "port": 5678},

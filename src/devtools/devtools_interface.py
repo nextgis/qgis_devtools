@@ -18,26 +18,23 @@
 import configparser
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from qgis import utils
 from qgis.core import QgsApplication
 from qgis.PyQt.QtCore import QObject, QTranslator, pyqtSignal
-from qgis.PyQt.QtGui import QIcon
 
 from devtools.core.constants import PACKAGE_NAME
 from devtools.core.logging import logger, unload_logger
 from devtools.shared.qobject_metaclass import QObjectMetaClass
 
 if TYPE_CHECKING:
-    from qgis.core import QgsTaskManager
-    from qgis.PyQt.QtWidgets import QToolBar
-
+    from devtools.debug.debug_interface import DebugInterface
     from devtools.notifier.notifier_interface import NotifierInterface
 
 
 class DevToolsInterface(QObject, metaclass=QObjectMetaClass):
-    """Define the interface for the QGIS DevTools plugin.
+    """Interface for the QGIS DevTools plugin.
 
     This abstract base class provides singleton access to the plugin
     instance, exposes plugin metadata, version, and path, and defines
@@ -88,15 +85,15 @@ class DevToolsInterface(QObject, metaclass=QObjectMetaClass):
         """
         return Path(__file__).parent
 
-    @property
-    @abstractmethod
-    def toolbar(self) -> "QToolBar":
-        """Return the plugin toolbar instance.
+    # @property
+    # @abstractmethod
+    # def toolbar(self) -> "QToolBar":
+    #     """Return the plugin toolbar instance.
 
-        :returns: Toolbar instance for the plugin.
-        :rtype: QToolBar
-        """
-        ...
+    #     :returns: Toolbar instance for the plugin.
+    #     :rtype: QToolBar
+    #     """
+    #     ...
 
     @property
     @abstractmethod
@@ -110,34 +107,32 @@ class DevToolsInterface(QObject, metaclass=QObjectMetaClass):
 
     @property
     @abstractmethod
-    def task_manager(self) -> "QgsTaskManager":
-        """Return the QgsTaskManager instance for background tasks.
+    def debug(self) -> "DebugInterface":
+        """Return the debug manager.
 
-        :returns: Task manager instance.
-        :rtype: QgsTaskManager
+        :returns: An instance of DebugInterface.
+        :rtype: DebugInterface
         """
         ...
 
     def initGui(self) -> None:
         """Initialize the GUI components and load necessary resources."""
         self.__translators = list()
-        self._load()
+
+        try:
+            self._load()
+        except Exception:
+            logger.exception("An error occurred while plugin loading")
 
     def unload(self) -> None:
         """Unload the plugin and perform cleanup operations."""
-        self._unload()
+        try:
+            self._unload()
+        except Exception:
+            logger.exception("An error occurred while plugin unloading")
+
         self.__unload_translations()
         unload_logger()
-
-    def icon(self, icon_path: Union[Path, str, None] = None) -> QIcon:
-        """Return a QIcon object for the given icon path."""
-        icons_path = self.path / "resources" / "icons"
-        if icon_path is None:
-            icon_path = f"{PACKAGE_NAME}_logo.svg"
-        full_path = icons_path / icon_path
-        if not full_path.exists():
-            logger.warning(f"Icon {icon_path} does not exist")
-        return QIcon(str(full_path))
 
     @abstractmethod
     def _load(self) -> None:
@@ -156,8 +151,12 @@ class DevToolsInterface(QObject, metaclass=QObjectMetaClass):
         ...
 
     def _add_translator(self, translator_path: Path) -> None:
-        translator = QTranslator()
+        """Add a translator for the plugin.
 
+        :param translator_path: Path to the translation file.
+        :type translator_path: Path
+        """
+        translator = QTranslator()
         is_loaded = translator.load(str(translator_path))
         if not is_loaded:
             logger.debug(f"Translator {translator_path} wasn't loaded")
@@ -172,7 +171,7 @@ class DevToolsInterface(QObject, metaclass=QObjectMetaClass):
         self.__translators.append(translator)
 
     def __unload_translations(self) -> None:
+        """Remove all translators added by the plugin."""
         for translator in self.__translators:
             QgsApplication.removeTranslator(translator)
-
         self.__translators.clear()

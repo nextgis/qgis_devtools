@@ -73,19 +73,41 @@ else:
 
 
 class AboutTab(str, Enum):
+    """Enum for About dialog tab names.
+
+    Used to identify tabs in the AboutDialog widget.
+    """
+
     Information = "information_tab"
     License = "license_tab"
     Components = "components_tab"
     Contributors = "contributors_tab"
 
     def __str__(self) -> str:
+        """Return the string value of the enum.
+
+        :returns: Enum value as string.
+        :rtype: str
+        """
         return str(self.value)
 
 
 class AboutDialog(QDialog, Ui_AboutDialogBase):
+    """Dialog displaying information about the plugin.
+
+    Shows plugin metadata, license, contributors, and other info.
+    """
+
     def __init__(
         self, package_name: str, parent: Optional[QWidget] = None
     ) -> None:
+        """Initialize the AboutDialog.
+
+        :param package_name: Name of the plugin package.
+        :type package_name: str
+        :param parent: Optional parent widget.
+        :type parent: Optional[QWidget]
+        """
         super().__init__(parent)
         self.setupUi(self)
         self.__package_name = package_name

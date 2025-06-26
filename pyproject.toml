@@ -12,6 +12,9 @@ dev = ["ruff", "pre-commit"]
 
 [tool.qgspb.forms]
 ui-files = [
+    "src/devtools/debug/ui/*.ui",
+    "src/devtools/debug/adapters/debugpy/ui/*.ui",
+    "src/devtools/shared/ui/*.ui",
     "src/devtools/ui/*.ui",
 ]
 compile = false
@@ -59,7 +62,7 @@ select = [
     "RUF",
     "SIM", # flake8-simplify
     "SLF", # flake8-self
-    "T10", # flake8-debugger
+    # "T10", # flake8-debugger
     "T20", # flake8-print
     "TCH", # flake8-type-checking
     "TD",  # flake8-todos
@@ -69,10 +72,10 @@ select = [
     "W",  # pycodesytle warnings
     "ANN",  # flake8-annotations
     "CPY",  # flake8-copyright
-    # "D",  # pydocstyle
+    "D",  # pydocstyle
     "FIX",  # flake8-fixme
 ]
-ignore = ["TD003", "FBT003", "ISC001", "COM812", "E501", "RUF001", "D100"]
+ignore = ["TD003", "FBT003", "ISC001", "COM812", "E501", "RUF001", "D100", "D104"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
@@ -89,3 +92,6 @@ extend-ignore-names = [
     "createWidget",
     "*Event",
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"

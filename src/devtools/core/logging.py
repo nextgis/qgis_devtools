@@ -17,6 +17,7 @@
 
 import logging
 import re
+from typing import Union
 
 from qgis.core import Qgis, QgsApplication
 
@@ -26,6 +27,46 @@ from devtools.core.settings import DevToolsSettings
 
 SUCCESS_LEVEL = logging.INFO + 1
 logging.addLevelName(SUCCESS_LEVEL, "SUCCESS")
+
+
+def map_logging_level_to_qgis(level: int) -> Qgis.MessageLevel:
+    """Map Python logging level to QGIS message level.
+
+    :param level: Logging level
+    :type level: int
+    :return: QGIS message level
+    :rtype: Qgis.MessageLevel
+    """
+    if level >= logging.ERROR:
+        return Qgis.MessageLevel.Critical
+    if level >= logging.WARNING:
+        return Qgis.MessageLevel.Warning
+    if level == SUCCESS_LEVEL:
+        return Qgis.MessageLevel.Success
+    if level >= logging.DEBUG:
+        return Qgis.MessageLevel.Info
+
+    return Qgis.MessageLevel.NoLevel
+
+
+def map_qgis_level_to_logging(level: Qgis.MessageLevel) -> int:
+    """Map QGIS message level to Python logging level.
+
+    :param level: QGIS message level
+    :type level: Qgis.MessageLevel
+    :return: Corresponding Python logging level
+    :rtype: int
+    """
+    if level == Qgis.MessageLevel.Critical:
+        return logging.ERROR
+    if level == Qgis.MessageLevel.Warning:
+        return logging.WARNING
+    if level == Qgis.MessageLevel.Success:
+        return SUCCESS_LEVEL
+    if level == Qgis.MessageLevel.Info:
+        return logging.INFO
+
+    return logging.NOTSET
 
 
 class QgisLogger(logging.Logger):
@@ -49,6 +90,25 @@ class QgisLogger(logging.Logger):
         """
         super().__init__(name, level)
 
+    def log(
+        self,
+        level: Union[int, Qgis.MessageLevel],
+        msg: str,
+        *args,  # noqa: ANN002
+        **kwargs,  # noqa: ANN003
+    ) -> None:
+        """Log 'msg % args' with the integer severity 'level'.
+
+        To pass exception information, use the keyword argument exc_info with
+        a true value, e.g.
+
+        logger.log(level, "We have a %s", "mysterious problem", exc_info=True)
+        """
+        if isinstance(level, Qgis.MessageLevel):
+            level = map_qgis_level_to_logging(level)
+
+        super().log(level, msg, *args, **kwargs)
+
     def success(self, message: str, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
         """Log a message with SUCCESS level.
 
@@ -71,7 +131,7 @@ class QgisLoggerHandler(logging.Handler):
         :param record: Log record
         :type record: logging.LogRecord
         """
-        level = self._map_logging_level_to_qgis(record.levelno)
+        level = map_logging_level_to_qgis(record.levelno)
         message = self.format(record)
         message_log = QgsApplication.messageLog()
         if record.levelno == logging.DEBUG:
@@ -79,25 +139,6 @@ class QgisLoggerHandler(logging.Handler):
         assert message_log is not None
 
         message_log.logMessage(self._process_html(message), record.name, level)
-
-    def _map_logging_level_to_qgis(self, level: int) -> Qgis.MessageLevel:
-        """Map Python logging level to QGIS message level.
-
-        :param level: Logging level
-        :type level: int
-        :return: QGIS message level
-        :rtype: Qgis.MessageLevel
-        """
-        if level >= logging.ERROR:
-            return Qgis.MessageLevel.Critical
-        if level >= logging.WARNING:
-            return Qgis.MessageLevel.Warning
-        if level == SUCCESS_LEVEL:
-            return Qgis.MessageLevel.Success
-        if level >= logging.DEBUG:
-            return Qgis.MessageLevel.Info
-
-        return Qgis.MessageLevel.NoLevel
 
     def _process_html(self, message: str) -> str:
         """Process message for HTML compatibility in QGIS log.

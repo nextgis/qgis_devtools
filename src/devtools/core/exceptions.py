@@ -17,7 +17,7 @@
 
 import sys
 import uuid
-from typing import Any, Callable, Optional
+from typing import Any, Callable, List, Optional, Tuple
 
 from qgis.core import QgsApplication
 
@@ -30,6 +30,7 @@ class DevToolsExceptionInfoMixin:
     _user_message: str
     _detail: Optional[str]
     _try_again: Optional[Callable[[], Any]]
+    _actions: List[Tuple[str, Callable[[], Any]]]
 
     def __init__(
         self,
@@ -38,6 +39,15 @@ class DevToolsExceptionInfoMixin:
         user_message: Optional[str] = None,
         detail: Optional[str] = None,
     ) -> None:
+        """Initialize the exception info mixin.
+
+        :param log_message: Log message for debugging.
+        :type log_message: Optional[str]
+        :param user_message: Message to display to the user.
+        :type user_message: Optional[str]
+        :param detail: Additional details about the error.
+        :type detail: Optional[str]
+        """
         self._error_id = str(uuid.uuid4())
 
         default_message = QgsApplication.translate(
@@ -51,6 +61,9 @@ class DevToolsExceptionInfoMixin:
         self._user_message = (
             user_message if user_message else default_message
         ).strip()
+
+        Exception.__init__(self, self._log_message)  # type: ignore reportArgumentType
+
         self.add_note("Message: " + self._user_message)
 
         self._detail = detail
@@ -60,33 +73,90 @@ class DevToolsExceptionInfoMixin:
 
         self._try_again = None
 
+        self._actions = []
+
     @property
     def error_id(self) -> str:
+        """Get the unique error identifier.
+
+        :returns: Unique error ID as a string.
+        :rtype: str
+        """
         return self._error_id
 
     @property
     def log_message(self) -> str:
+        """Get the log message for debugging.
+
+        :returns: Log message.
+        :rtype: str
+        """
         return self._log_message
 
     @property
     def user_message(self) -> str:
+        """Get the message intended for the user.
+
+        :returns: User message.
+        :rtype: str
+        """
         return self._user_message
 
     @property
     def detail(self) -> Optional[str]:
+        """Get additional details about the error.
+
+        :returns: Error details or None.
+        :rtype: Optional[str]
+        """
         return self._detail
 
     @property
     def try_again(self) -> Optional[Callable[[], Any]]:
+        """Get the callable to retry the failed operation.
+
+        :returns: Callable or None.
+        :rtype: Optional[Callable[[], Any]]
+        """
         return self._try_again
 
     @try_again.setter
     def try_again(self, try_again: Optional[Callable[[], Any]]) -> None:
+        """Set the callable to retry the failed operation.
+
+        :param try_again: Callable to retry or None.
+        :type try_again: Optional[Callable[[], Any]]
+        """
         self._try_again = try_again
+
+    @property
+    def actions(self) -> List[Tuple[str, Callable[[], Any]]]:
+        """Get the list of available actions for this exception.
+
+        :returns: List of (action_name, action_callable) tuples.
+        :rtype: List[Tuple[str, Callable[[], Any]]]
+        """
+        return self._actions
+
+    def add_action(self, name: str, callback: Callable[[], Any]) -> None:
+        """Add an action to the exception.
+
+        :param name: Name of the action.
+        :type name: str
+        :param callback: Callable to execute for the action.
+        :type callback: Callable[[], Any]
+        """
+        self._actions.append((name, callback))
 
     if sys.version_info < (3, 11):
 
         def add_note(self, note: str) -> None:
+            """Add a note to the exception message (for Python < 3.11).
+
+            :param note: Note string to add.
+            :type note: str
+            :raises TypeError: If note is not a string.
+            """
             if not isinstance(note, str):
                 message = "Note must be a string"
                 raise TypeError(message)
@@ -107,6 +177,15 @@ class DevToolsError(DevToolsExceptionInfoMixin, Exception):
         user_message: Optional[str] = None,
         detail: Optional[str] = None,
     ) -> None:
+        """Initialize the error.
+
+        :param log_message: Log message for debugging.
+        :type log_message: Optional[str]
+        :param user_message: Message to display to the user.
+        :type user_message: Optional[str]
+        :param detail: Additional details about the error.
+        :type detail: Optional[str]
+        """
         DevToolsExceptionInfoMixin.__init__(
             self,
             log_message,
@@ -129,6 +208,15 @@ class DevToolsWarning(DevToolsExceptionInfoMixin, UserWarning):
         user_message: Optional[str] = None,
         detail: Optional[str] = None,
     ) -> None:
+        """Initialize the warning.
+
+        :param log_message: Log message for debugging.
+        :type log_message: Optional[str]
+        :param user_message: Message to display to the user.
+        :type user_message: Optional[str]
+        :param detail: Additional details about the error.
+        :type detail: Optional[str]
+        """
         DevToolsExceptionInfoMixin.__init__(
             self,
             log_message,
@@ -146,6 +234,7 @@ class DevToolsReloadAfterUpdateWarning(DevToolsWarning):
     """
 
     def __init__(self) -> None:
+        """Initialize the warning."""
         # fmt: off
         super().__init__(
             log_message="Plugin structure changed",
@@ -156,3 +245,42 @@ class DevToolsReloadAfterUpdateWarning(DevToolsWarning):
             ),
         )
         # fmt: on
+
+
+class DevToolsUiLoadError(DevToolsError):
+    """Exception raised when loading a UI file fails.
+
+    :param log_message: Log message for debugging.
+    :type log_message: Optional[str]
+    :param user_message: Message to display to the user.
+    :type user_message: Optional[str]
+    :param detail: Additional details about the error.
+    :type detail: Optional[str]
+    """
+
+    def __init__(
+        self,
+        log_message: Optional[str] = None,
+        *,
+        user_message: Optional[str] = None,
+        detail: Optional[str] = None,
+    ) -> None:
+        """Initialize DevToolsUiLoadError.
+
+        :param log_message: Log message for debugging.
+        :type log_message: Optional[str]
+        :param user_message: Message to display to the user.
+        :type user_message: Optional[str]
+        :param detail: Additional details about the error.
+        :type detail: Optional[str]
+        """
+        default_message = QgsApplication.translate(
+            "Exceptions", "Failed to load the user interface."
+        )
+        log_message = log_message if log_message else default_message
+        user_message = user_message if user_message else default_message
+        super().__init__(
+            log_message=log_message,
+            user_message=user_message,
+            detail=detail,
+        )

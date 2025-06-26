@@ -14,8 +14,3 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, see <https://www.gnu.org/licenses/>.
 
-
-PACKAGE_NAME = "devtools"
-PLUGIN_NAME = "QGIS DevTools"
-MENU_NAME = "QGIS &DevTools"
-PLUGIN_SETTINGS_GROUP = "DevTools"

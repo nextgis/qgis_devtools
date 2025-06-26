@@ -16,10 +16,9 @@
 
 
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from qgis.core import Qgis
-from qgis.gui import QgisInterface, QgsMessageBarItem
 from qgis.PyQt.QtCore import QObject, QUrl
 from qgis.PyQt.QtGui import QDesktopServices
 from qgis.PyQt.QtWidgets import QMessageBox, QPushButton, QWidget
@@ -33,6 +32,8 @@ from devtools.core.utils import utm_tags
 from devtools.notifier.notifier_interface import NotifierInterface
 
 if TYPE_CHECKING:
+    from qgis.gui import QgisInterface
+
     assert isinstance(iface, QgisInterface)
 
 
@@ -54,20 +55,36 @@ class MessageBarNotifier(NotifierInterface):
         self.dismiss_all()
 
     def display_message(
-        self, message: str, level: Qgis.MessageLevel = Qgis.MessageLevel.Info
+        self,
+        message: str,
+        *,
+        level: Qgis.MessageLevel = Qgis.MessageLevel.Info,
+        widgets: Optional[List[QWidget]] = None,
+        **kwargs,  # noqa: ANN003, ARG002
     ) -> str:
         """Display a message to the user via the QGIS message bar.
 
         :param message: The message to display.
         :param level: The message level as Qgis.MessageLevel.
+        :param widgets: Custom widgets for message.
         :return: An identifier for the displayed message.
         """
+        custom_widgets = widgets if widgets else []
+
         message_bar = iface.messageBar()
         widget = message_bar.createMessage(PLUGIN_NAME, message)
+
+        for custom_widget in custom_widgets:
+            custom_widget.setParent(widget)
+            widget.layout().addWidget(custom_widget)
+
         item = message_bar.pushWidget(widget, level)
         item.setObjectName("DevToolsMessageBarItem")
         message_id = str(uuid.uuid4())
         item.setProperty("DevToolsMessageId", message_id)
+
+        logger.log(level, message)
+
         return message_id
 
     def display_exception(self, error: Exception) -> str:
@@ -104,7 +121,10 @@ class MessageBarNotifier(NotifierInterface):
         item.setObjectName("DevToolsMessageBarItem")
         item.setProperty("DevToolsMessageId", error.error_id)
 
-        logger.exception(error.log_message, exc_info=error)
+        if level == Qgis.MessageLevel.Critical:
+            logger.exception(error.log_message, exc_info=error)
+        else:
+            logger.warning(error.user_message)
 
         return error.error_id
 
@@ -113,20 +133,19 @@ class MessageBarNotifier(NotifierInterface):
 
         :param message_id: The identifier of the message to dismiss.
         """
-        notifications = iface.mainWindow().findChildren(
-            QgsMessageBarItem, "DevToolsMessageBarItem"
-        )
-        for notification in notifications:
-            if notification.property("DevToolsMessageId") != message_id:
+        for notification in iface.messageBar().items():
+            if (
+                notification.objectName() != "DevToolsMessageBarItem"
+                or notification.property("DevToolsMessageId") != message_id
+            ):
                 continue
             iface.messageBar().popWidget(notification)
 
     def dismiss_all(self) -> None:
         """Dismiss all currently displayed messages."""
-        notifications = iface.mainWindow().findChildren(
-            QgsMessageBarItem, "DevToolsMessageBarItem"
-        )
-        for notification in notifications:
+        for notification in iface.messageBar().items():
+            if notification.objectName() != "DevToolsMessageBarItem":
+                continue
             iface.messageBar().popWidget(notification)
 
     def _add_error_buttons(
@@ -159,6 +178,11 @@ class MessageBarNotifier(NotifierInterface):
 
             button = QPushButton(self.tr("Try again"))
             button.pressed.connect(try_again)
+            widget.layout().addWidget(button)
+
+        for action_name, action_callback in error.actions:
+            button = QPushButton(action_name)
+            button.pressed.connect(action_callback)
             widget.layout().addWidget(button)
 
         if error.detail is not None:

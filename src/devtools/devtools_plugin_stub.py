@@ -19,7 +19,7 @@ import sys
 from typing import TYPE_CHECKING, Optional
 
 from osgeo import gdal
-from qgis.core import Qgis, QgsApplication, QgsTaskManager
+from qgis.core import Qgis
 from qgis.gui import QgisInterface
 from qgis.PyQt.QtCore import (
     QT_VERSION_STR,
@@ -37,6 +37,7 @@ from devtools.notifier.message_bar_notifier import MessageBarNotifier
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QToolBar
 
+    from devtools.debug.debug_interface import DebugInterface
     from devtools.notifier.notifier_interface import NotifierInterface
 
 assert isinstance(iface, QgisInterface)
@@ -87,13 +88,13 @@ class DevToolsPluginStub(DevToolsInterface):
         return self.__notifier
 
     @property
-    def task_manager(self) -> "QgsTaskManager":
-        """Return the QgsTaskManager instance for background tasks.
+    def debug(self) -> "DebugInterface":
+        """Return the debug manager.
 
-        :returns: Task manager instance.
-        :rtype: QgsTaskManager
+        :returns: An instance of DebugInterface.
+        :rtype: DebugInterface
         """
-        return QgsApplication.taskManager()  # type: ignore reportReturnType
+        raise NotImplementedError
 
     def _load(self) -> None:
         """Load the plugin resources and initialize components."""
@@ -104,4 +105,5 @@ class DevToolsPluginStub(DevToolsInterface):
 
     def _unload(self) -> None:
         """Unload the plugin resources and clean up components."""
+        self.__notifier.deleteLater()
         self.__notifier = None

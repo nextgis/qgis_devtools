@@ -19,39 +19,54 @@ import sys
 from typing import TYPE_CHECKING, Optional
 
 from osgeo import gdal
-from qgis.core import Qgis, QgsApplication, QgsTaskManager
+from qgis.core import Qgis, QgsApplication
 from qgis.gui import QgisInterface
 from qgis.PyQt.QtCore import QT_VERSION_STR, QObject, QSysInfo, pyqtSlot
+from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QToolBar
 from qgis.utils import iface
 
 from devtools.core import utils
 from devtools.core.constants import MENU_NAME, PACKAGE_NAME, PLUGIN_NAME
 from devtools.core.logging import logger
+from devtools.debug.debug_manager import DebugManager
 from devtools.devtools_interface import DevToolsInterface
 from devtools.notifier.message_bar_notifier import MessageBarNotifier
 from devtools.ui.about_dialog import AboutDialog
+from devtools.ui.devtools_settings_page import DevToolsSettingsPageFactory
+from devtools.ui.utils import plugin_icon
 
 if TYPE_CHECKING:
+    from devtools.debug.debug_interface import DebugInterface
     from devtools.notifier.notifier_interface import NotifierInterface
 
 assert isinstance(iface, QgisInterface)
 
 
 class DevToolsPlugin(DevToolsInterface):
-    """Stub implementation of plugin interface used to notify the user when the plugin failed to start."""
+    """Main plugin class for QGIS DevTools plugin.
+
+    Implements the core logic, toolbar, notifier, and debug manager.
+    """
 
     __toolbar: Optional[QToolBar]
     __notifier: Optional[MessageBarNotifier]
+    __debug_manager: Optional[DebugManager]
     __about_plugin_action: Optional[QAction]  # type: ignore reportInvalidTypeForm
     __about_plugin_help_action: Optional[QAction]  # type: ignore reportInvalidTypeForm
+    __devtools_settings_page_factory: Optional[DevToolsSettingsPageFactory]
+    __open_settings_action: Optional[QAction]  # type: ignore reportInvalidTypeForm
 
     def __init__(self, parent: Optional[QObject] = None) -> None:
-        """Initialize the plugin stub."""
+        """Initialize the plugin instance.
+
+        :param parent: Optional parent QObject.
+        :type parent: Optional[QObject]
+        """
         super().__init__(parent)
         metadata_file = self.path / "metadata.txt"
 
-        logger.debug("<b>✓ Plugin stub created</b>")
+        logger.debug("<b>✓ Plugin created</b>")
         logger.debug(f"<b>ⓘ OS:</b> {QSysInfo().prettyProductName()}")
         logger.debug(f"<b>ⓘ Qt version:</b> {QT_VERSION_STR}")
         logger.debug(f"<b>ⓘ QGIS version:</b> {Qgis.version()}")
@@ -66,18 +81,24 @@ class DevToolsPlugin(DevToolsInterface):
                 else ""
             )
         )
+
         self.__toolbar = None
         self.__notifier = None
+        self.__debug_manager = None
+        self.__about_plugin_action = None
+        self.__about_plugin_help_action = None
+        self.__devtools_settings_page_factory = None
+        self.__open_settings_action = None
 
-    @property
-    def toolbar(self) -> "QToolBar":
-        """Return the plugin toolbar instance.
+    # @property
+    # def toolbar(self) -> QToolBar:
+    #     """Return the plugin toolbar instance.
 
-        :returns: Toolbar instance for the plugin.
-        :rtype: QToolBar
-        """
-        assert self.__toolbar is not None, "Toolbar is not initialized"
-        return self.__toolbar
+    #     :returns: Toolbar instance for the plugin.
+    #     :rtype: QToolBar
+    #     """
+    #     assert self.__toolbar is not None, "Toolbar is not initialized"
+    #     return self.__toolbar
 
     @property
     def notifier(self) -> "NotifierInterface":
@@ -85,18 +106,23 @@ class DevToolsPlugin(DevToolsInterface):
 
         :returns: Notifier interface instance.
         :rtype: NotifierInterface
+        :raises AssertionError: If notifier is not initialized.
         """
         assert self.__notifier is not None, "Notifier is not initialized"
         return self.__notifier
 
     @property
-    def task_manager(self) -> "QgsTaskManager":
-        """Return the QgsTaskManager instance for background tasks.
+    def debug(self) -> "DebugInterface":
+        """Return the debug manager.
 
-        :returns: Task manager instance.
-        :rtype: QgsTaskManager
+        :returns: Debug manager instance.
+        :rtype: DebugInterface
+        :raises AssertionError: If debug manager is not initialized.
         """
-        return QgsApplication.taskManager()  # type: ignore reportReturnType
+        assert self.__debug_manager is not None, (
+            "Debug manager is not initialized"
+        )
+        return self.__debug_manager
 
     def _load(self) -> None:
         """Load the plugin resources and initialize components."""
@@ -105,18 +131,27 @@ class DevToolsPlugin(DevToolsInterface):
         )
         self.__notifier = MessageBarNotifier(self)
 
-        self.__toolbar = iface.addToolBar("DevTools ToolBar")
-        self.__toolbar.setObjectName("DevToolsToolBar")
+        # self.__toolbar = iface.addToolBar("DevTools ToolBar")
+        # self.__toolbar.setObjectName("DevToolsToolBar")
 
+        self.__load_settings_page()
+        self.__load_debug_manager()
         self.__load_about_dialog_actions()
         self.__add_icons_to_menu()
 
     def _unload(self) -> None:
         """Unload the plugin resources and clean up components."""
         self.__unload_about_dialog_actions()
-        self.__toolbar.deleteLater()
-        self.__toolbar = None
-        self.__notifier = None
+        self.__unload_debug_manager()
+        self.__unload_settings_page()
+
+        # if self.__toolbar is not None:
+        #     self.__toolbar.deleteLater()
+        #     self.__toolbar = None
+
+        if self.__notifier is not None:
+            self.__notifier.deleteLater()
+            self.__notifier = None
 
     def __load_about_dialog_actions(self) -> None:
         self.__about_plugin_action = QAction(
@@ -127,7 +162,7 @@ class DevToolsPlugin(DevToolsInterface):
         iface.addPluginToMenu(MENU_NAME, self.__about_plugin_action)
 
         self.__about_plugin_help_action = QAction(
-            icon=self.icon(),  # type: ignore reportArgumentType
+            icon=plugin_icon(),  # type: ignore reportArgumentType
             text=PLUGIN_NAME,
         )
         self.__about_plugin_help_action.triggered.connect(
@@ -139,18 +174,62 @@ class DevToolsPlugin(DevToolsInterface):
         plugin_help_menu.addAction(self.__about_plugin_help_action)  # type: ignore reportCallIssue
 
     def __unload_about_dialog_actions(self) -> None:
-        self.__about_plugin_action.deleteLater()
-        self.__about_plugin_action = None
-        self.__about_plugin_help_action.deleteLater()
-        self.__about_plugin_help_action = None
+        if self.__about_plugin_action is not None:
+            self.__about_plugin_action.deleteLater()
+            self.__about_plugin_action = None
+        if self.__about_plugin_help_action is not None:
+            self.__about_plugin_help_action.deleteLater()
+            self.__about_plugin_help_action = None
 
     def __add_icons_to_menu(self) -> None:
         for action in iface.pluginMenu().actions():
             if action.text() != MENU_NAME:
                 continue
-            action.setIcon(self.icon())
+            action.setIcon(plugin_icon())
+
+    def __load_debug_manager(self) -> None:
+        self.__debug_manager = DebugManager(self)
+        self.__debug_manager.load()
+
+    def __unload_debug_manager(self) -> None:
+        if self.__debug_manager is not None:
+            self.__debug_manager.unload()
+            self.__debug_manager = None
+
+    def __load_settings_page(self) -> None:
+        self.__devtools_settings_page_factory = DevToolsSettingsPageFactory()
+        iface.registerOptionsWidgetFactory(
+            self.__devtools_settings_page_factory
+        )
+
+        self.__open_settings_action = QAction(
+            icon=QIcon(
+                ":images/themes/default/console/iconSettingsConsole.svg"
+            ),  # type: ignore reportArgumentType
+            text=self.tr("Settings…"),
+        )
+        self.__open_settings_action.triggered.connect(
+            lambda: iface.showOptionsDialog(
+                iface.mainWindow(), "DebugSettingsPage"
+            )
+        )
+        iface.addPluginToMenu(MENU_NAME, self.__open_settings_action)
+
+    def __unload_settings_page(self) -> None:
+        if self.__devtools_settings_page_factory is not None:
+            iface.unregisterOptionsWidgetFactory(
+                self.__devtools_settings_page_factory
+            )
+            self.__devtools_settings_page_factory.deleteLater()
+            self.__devtools_settings_page_factory = None
+
+        if self.__open_settings_action is not None:
+            iface.removePluginMenu(MENU_NAME, self.__open_settings_action)
+            self.__open_settings_action.deleteLater()
+            self.__open_settings_action = None
 
     @pyqtSlot()
     def __show_about_dialog(self) -> None:
+        """Show the about dialog for the plugin."""
         about_dialog = AboutDialog(PACKAGE_NAME)
         about_dialog.exec()

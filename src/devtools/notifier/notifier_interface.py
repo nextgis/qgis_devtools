@@ -32,7 +32,11 @@ class NotifierInterface(QObject, metaclass=QObjectMetaClass):
 
     @abstractmethod
     def display_message(
-        self, message: str, level: Qgis.MessageLevel = Qgis.MessageLevel.Info
+        self,
+        message: str,
+        *,
+        level: Qgis.MessageLevel = Qgis.MessageLevel.Info,
+        **kwargs,  # noqa: ANN003
     ) -> str:
         """Display a message to the user.
 
