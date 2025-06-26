@@ -157,7 +157,7 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>DebugManager</name>
     <message>
-        <location filename="../debug/debug_manager.py" line="62"/>
+        <location filename="../debug/debug_manager.py" line="80"/>
         <source>Debug already started</source>
         <translation>Отладка уже запущена</translation>
     </message>
@@ -165,7 +165,7 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>DebugSettingsErrorPage</name>
     <message>
-        <location filename="../debug/ui/debug_settings_page.py" line="169"/>
+        <location filename="../debug/ui/debug_settings_page.py" line="174"/>
         <source>An error occurred while loading settings page</source>
         <translation>Произошла ошибка при загрузке страницы настроек</translation>
     </message>
@@ -206,7 +206,7 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>DebugSettingsPageFactory</name>
     <message>
-        <location filename="../debug/ui/debug_settings_page.py" line="200"/>
+        <location filename="../debug/ui/debug_settings_page.py" line="205"/>
         <source>Debug</source>
         <translation>Отладка</translation>
     </message>
@@ -219,27 +219,27 @@ p, li { white-space: pre-wrap; }
         <translation>Библиотека &quot;{lib_name}&quot; не установлена.</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="259"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="265"/>
         <source>Client connected</source>
         <translation>Клиент подключён</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="264"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="270"/>
         <source>Client disconnected</source>
         <translation>Клиент отключён</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="271"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="277"/>
         <source>Copy launch.json template</source>
         <translation>Скопировать шаблон launch.json</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="271"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="277"/>
         <source>Copied!</source>
         <translation>Скопировано!</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="277"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="283"/>
         <source>Debug session started at {self.__active_hostname}:{self.__active_port}</source>
         <translation>Сессия отладки запущена на {self.__active_hostname}:{self.__active_port}</translation>
     </message>
