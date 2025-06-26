@@ -128,7 +128,7 @@ class DebugSettingsPage(QgsOptionsPageWidget):
         )
 
         for adapter in self._adapters:
-            self.adapter_combobox.addItem(adapter.name())
+            self.adapter_combobox.addItem(adapter.name(), adapter.name())
 
             try:
                 widget = adapter.create_settings_widget(self)
@@ -143,10 +143,15 @@ class DebugSettingsPage(QgsOptionsPageWidget):
 
     def __load_settings(self) -> None:
         settings = DebugSettings()
+        adapter_index = self.adapter_combobox.findData(
+            settings.current_adapter
+        )
+        self.adapter_combobox.setCurrentIndex(max(0, adapter_index))
         self.start_on_sturtup_checkbox.setChecked(settings.auto_start)
         self.notification_checkbox.setChecked(settings.show_notification)
 
     def __save_general(self, settings: DebugSettings) -> None:
+        settings.current_adapter = self.adapter_combobox.currentData()
         settings.auto_start = self.start_on_sturtup_checkbox.isChecked()
         settings.show_notification = self.notification_checkbox.isChecked()
 

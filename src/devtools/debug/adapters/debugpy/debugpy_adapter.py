@@ -178,6 +178,12 @@ class DebugpyAdapter(AbstractDebugAdapter):
             # Delayed notification to avoid bug with unusable messages
             # when adding before UI is loaded
             QTimer.singleShot(0, self.__show_start_notification)
+        else:
+            logger.info(
+                self.tr(
+                    f"Debug session started at {self.__active_hostname}:{self.__active_port}"
+                ),
+            )
 
         self.__timer.start()
         self.state_changed.emit(DebugState.RUNNING)

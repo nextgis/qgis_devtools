@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, see <https://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot
 from qgis.utils import iface
@@ -31,6 +31,10 @@ from devtools.devtools_interface import DevToolsInterface
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface
 
+    from devtools.debug.adapters.abstract_debug_adapter import (
+        AbstractDebugAdapter,
+    )
+
     assert isinstance(iface, QgisInterface)
 
 
@@ -43,6 +47,9 @@ class DebugManager(DebugInterface):
     state_changed = pyqtSignal(DebugState)
     """Signal emitted when the debug state changes."""
 
+    _adapters: List["AbstractDebugAdapter"]
+    _current_adapter_index: int
+
     def __init__(self, parent: DevToolsInterface) -> None:
         """Initialize DebugManager instance.
 
@@ -51,6 +58,22 @@ class DebugManager(DebugInterface):
         """
         super().__init__(parent)
         self._plugin = parent
+        self._button = None
+        self._adapters = []
+        self._current_adapter_index = -1
+
+    @property
+    def adapter(self) -> Optional["AbstractDebugAdapter"]:
+        """Get the currently selected debug adapter.
+
+        :returns: Active debug adapter or None if not selected.
+        :rtype: Optional[AbstractDebugAdapter]
+        """
+        return (
+            self._adapters[self._current_adapter_index]
+            if self._current_adapter_index != -1
+            else None
+        )
 
     @pyqtSlot()
     def start(self) -> None:
@@ -58,12 +81,12 @@ class DebugManager(DebugInterface):
 
         If the debug session is already started, does nothing.
         """
-        if self.__adapter.state != DebugState.STOPPED:
+        if self.adapter.state != DebugState.STOPPED:
             logger.info(self.tr("Debug already started"))
             return
 
         try:
-            self.__adapter.start()
+            self.adapter.start()
         except Exception as error:
             logger.exception("Can't start debug")
             DevToolsInterface.instance().notifier.display_exception(error)
@@ -71,14 +94,20 @@ class DebugManager(DebugInterface):
     @pyqtSlot()
     def stop(self) -> None:
         """Stop the debug session."""
-        self.__adapter.stop()
+        self.adapter.stop()
 
     def load(self) -> None:
         """Load and initialize the debug manager and UI."""
-        self.__adapter = DebugpyAdapter(self)
-        self.__adapter.state_changed.connect(self.state_changed)
+        self._adapters = [
+            DebugpyAdapter(self),
+        ]
+        self._current_adapter_index = 0
+        self.adapter.state_changed.connect(self.state_changed)
+
         self.__add_button()
         self.__load_settings_page()
+
+        # self._plugin.settings_changed.connect(self.__reload)
 
         settings = DebugSettings()
         if settings.auto_start:
@@ -86,16 +115,22 @@ class DebugManager(DebugInterface):
 
     def unload(self) -> None:
         """Unload the debug manager and clean up UI."""
+        # self._plugin.settings_changed.disconnect(self.__reload)
+
         self.__unload_settings_page()
         self.__remove_button()
-        self.__adapter.stop()
+        self.adapter.stop()
+        for adapter in self._adapters:
+            adapter.deleteLater()
+        self._adapters = []
+        self._current_adapter_index = -1
 
     def __add_button(self) -> None:
         self._button = DebugButton()
-        self._button.set_adapter_name(self.__adapter.name())
+        self._button.set_adapter_name(self.adapter.name())
         self._button.toggle_debug_state.connect(self.__toggle_debug_state)
         self.state_changed.connect(self.__update_state)
-        self.__update_state(self.__adapter.state)
+        self.__update_state(self.adapter.state)
         iface.statusBarIface().addPermanentWidget(self._button)
 
     def __remove_button(self) -> None:
@@ -106,7 +141,7 @@ class DebugManager(DebugInterface):
 
     def __load_settings_page(self) -> None:
         self.__debug_settings_page_factory = DebugSettingsPageFactory(
-            [self.__adapter]
+            self._adapters
         )
         iface.registerOptionsWidgetFactory(self.__debug_settings_page_factory)
 
@@ -122,7 +157,7 @@ class DebugManager(DebugInterface):
 
     @pyqtSlot()
     def __toggle_debug_state(self) -> None:
-        if self.__adapter.state != DebugState.STOPPED:
+        if self.adapter.state != DebugState.STOPPED:
             self.stop()
             return
 
@@ -133,7 +168,7 @@ class DebugManager(DebugInterface):
         self._button.set_state(state)
 
         if state == DebugState.STOPPED:
-            ok, reason = self.__adapter.can_start()
+            ok, reason = self.adapter.can_start()
             if ok:
                 self._button.unblock_start()
             else:
