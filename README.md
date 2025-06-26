@@ -1,5 +1,9 @@
 # QGIS DevTools
 
+![Screenshot](assets/images/screenshot.png)
+
+QGIS DevTools is a toolkit for QGIS plugin developers. It allows you to launch a debugpy server directly from QGIS and connect to the process from VS Code. In the future, more tools and new debugging libraries will be added to simplify everyday development tasks.
+
 ## License
 
 This program is licensed under GNU GPL v.2 or any later version.
