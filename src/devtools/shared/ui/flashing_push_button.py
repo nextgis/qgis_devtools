@@ -60,7 +60,7 @@ class FlashingPushButton(QPushButton):
         """Set minimum width to fit the longest text."""
         font_metrics = self.fontMetrics()
         width = max(
-            font_metrics.width(self._original_text),
+            font_metrics.horizontalAdvance(self._original_text),
             font_metrics.horizontalAdvance(self._flash_text),
         )
         # Add some padding for style
