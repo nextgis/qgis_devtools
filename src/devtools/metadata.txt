@@ -16,6 +16,7 @@ repository=https://github.com/nextgis/qgis_devtools
 icon=resources/icons/devtools_logo.svg
 experimental=False
 deprecated=False
+supportsQt6=True
 
 changelog=
     1.0.0:
