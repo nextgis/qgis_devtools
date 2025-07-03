@@ -15,6 +15,7 @@ tags=debugging,development,tools
 homepage=https://github.com/nextgis/qgis_devtools
 tracker=https://github.com/nextgis/qgis_devtools/issues
 repository=https://github.com/nextgis/qgis_devtools
+user_guide=https://docs.nextgis.com/docs_ngqgis/source/devtools.html
 icon=resources/icons/devtools_logo.svg
 experimental=False
 deprecated=False
