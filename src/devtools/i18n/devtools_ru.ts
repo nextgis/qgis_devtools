@@ -114,42 +114,42 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>DebugButton</name>
     <message>
-        <location filename="../debug/ui/debug_button.py" line="74"/>
+        <location filename="../debug/ui/debug_button.py" line="76"/>
         <source>&lt;b&gt;Status:&lt;/b&gt; </source>
         <translation>&lt;b&gt;Статус:&lt;/b&gt; </translation>
     </message>
     <message>
-        <location filename="../debug/ui/debug_button.py" line="83"/>
+        <location filename="../debug/ui/debug_button.py" line="85"/>
         <source>stopped</source>
         <translation>остановлен</translation>
     </message>
     <message>
-        <location filename="../debug/ui/debug_button.py" line="84"/>
+        <location filename="../debug/ui/debug_button.py" line="86"/>
         <source>Start</source>
         <translation>Запустить</translation>
     </message>
     <message>
-        <location filename="../debug/ui/debug_button.py" line="91"/>
+        <location filename="../debug/ui/debug_button.py" line="93"/>
         <source>running</source>
         <translation>запущен</translation>
     </message>
     <message>
-        <location filename="../debug/ui/debug_button.py" line="100"/>
+        <location filename="../debug/ui/debug_button.py" line="102"/>
         <source>Stop</source>
         <translation>Остановить</translation>
     </message>
     <message>
-        <location filename="../debug/ui/debug_button.py" line="99"/>
+        <location filename="../debug/ui/debug_button.py" line="101"/>
         <source>client connected</source>
         <translation>клиент подключён</translation>
     </message>
     <message>
-        <location filename="../debug/ui/debug_button.py" line="114"/>
+        <location filename="../debug/ui/debug_button.py" line="116"/>
         <source>&lt;b&gt;Adapter:&lt;/b&gt; </source>
         <translation>&lt;b&gt;Адаптер:&lt;/b&gt; </translation>
     </message>
     <message>
-        <location filename="../debug/ui/debug_button.py" line="125"/>
+        <location filename="../debug/ui/debug_button.py" line="127"/>
         <source>Unable to start debugging</source>
         <translation>Не удалось запустить отладку</translation>
     </message>
@@ -157,7 +157,7 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>DebugManager</name>
     <message>
-        <location filename="../debug/debug_manager.py" line="80"/>
+        <location filename="../debug/debug_manager.py" line="85"/>
         <source>Debug already started</source>
         <translation>Отладка уже запущена</translation>
     </message>
@@ -214,34 +214,44 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>DebugpyAdapter</name>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="122"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="124"/>
         <source>&quot;{lib_name}&quot; library is not installed.</source>
         <translation>Библиотека &quot;{lib_name}&quot; не установлена.</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="265"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="280"/>
         <source>Client connected</source>
         <translation>Клиент подключён</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="270"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="285"/>
         <source>Client disconnected</source>
         <translation>Клиент отключён</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="277"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="292"/>
         <source>Copy launch.json template</source>
         <translation>Скопировать шаблон launch.json</translation>
     </message>
     <message>
-        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="277"/>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="292"/>
         <source>Copied!</source>
         <translation>Скопировано!</translation>
     </message>
     <message>
         <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="283"/>
         <source>Debug session started at {self.__active_hostname}:{self.__active_port}</source>
-        <translation>Сессия отладки запущена на {self.__active_hostname}:{self.__active_port}</translation>
+        <translation type="obsolete">Сессия отладки запущена на {self.__active_hostname}:{self.__active_port}</translation>
+    </message>
+    <message>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="128"/>
+        <source>Installation instructions can be found in the user guide.</source>
+        <translation>Инструкции по установке можно найти в руководстве пользователя.</translation>
+    </message>
+    <message>
+        <location filename="../debug/adapters/debugpy/debugpy_adapter.py" line="298"/>
+        <source>Debug session started at {hostname}:{port}</source>
+        <translation>Сессия отладки запущена на {hostname}:{port}</translation>
     </message>
 </context>
 <context>
@@ -275,14 +285,39 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>DevToolsPlugin</name>
     <message>
-        <location filename="../devtools_plugin.py" line="157"/>
+        <location filename="../devtools_plugin.py" line="161"/>
         <source>About plugin…</source>
         <translation>О модуле…</translation>
     </message>
     <message>
-        <location filename="../devtools_plugin.py" line="205"/>
+        <location filename="../devtools_plugin.py" line="209"/>
         <source>Settings…</source>
         <translation>Настройки…</translation>
+    </message>
+    <message>
+        <location filename="../devtools_plugin.py" line="258"/>
+        <source>Open Changelog</source>
+        <translation>Открыть список изменений</translation>
+    </message>
+    <message>
+        <location filename="../devtools_plugin.py" line="261"/>
+        <source>Open User Guide</source>
+        <translation>Открыть руководство пользователя</translation>
+    </message>
+    <message>
+        <location filename="../devtools_plugin.py" line="264"/>
+        <source>About Plugin…</source>
+        <translation>О модуле…</translation>
+    </message>
+    <message>
+        <location filename="../devtools_plugin.py" line="268"/>
+        <source>Plugin was successfully installed</source>
+        <translation>Плагин был успешно установлен</translation>
+    </message>
+    <message>
+        <location filename="../devtools_plugin.py" line="271"/>
+        <source>Plugin was successfully updated</source>
+        <translation>Плагин был успешно обновлён</translation>
     </message>
 </context>
 <context>
@@ -370,8 +405,13 @@ p, li { white-space: pre-wrap; }
     </message>
     <message>
         <location filename="../debug/exceptions.py" line="149"/>
-        <source>Multiple starts can cause the debuggee to hang.</source>
-        <translation>Многократный запуск может привести к зависанию отлаживаемого процесса.</translation>
+        <source>Multiple starts can cause the debuggee to hang. </source>
+        <translation>Многократный запуск может привести к зависанию отлаживаемого процесса. </translation>
+    </message>
+    <message>
+        <location filename="../debug/exceptions.py" line="149"/>
+        <source>This is a limitation of the used debug library.</source>
+        <translation>Это ограничение используемой библиотеки отладки.</translation>
     </message>
 </context>
 <context>
@@ -405,29 +445,34 @@ p, li { white-space: pre-wrap; }
         <translation>Форма</translation>
     </message>
     <message>
-        <location filename="../debug/ui/status_widget_base.ui" line="43"/>
+        <location filename="../debug/ui/status_widget_base.ui" line="49"/>
         <source>&lt;h3&gt;Debug&lt;/h3&gt;</source>
         <translation>&lt;h3&gt;Отладка&lt;/h3&gt;</translation>
     </message>
     <message>
-        <location filename="../debug/ui/status_widget_base.ui" line="50"/>
+        <location filename="../debug/ui/status_widget_base.ui" line="69"/>
         <source>Settings</source>
         <translation>Настройки</translation>
     </message>
     <message>
-        <location filename="../debug/ui/status_widget_base.ui" line="69"/>
+        <location filename="../debug/ui/status_widget_base.ui" line="91"/>
         <source>&lt;b&gt;Adapter:&lt;/b&gt;</source>
         <translation>&lt;b&gt;Адаптер:&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="../debug/ui/status_widget_base.ui" line="82"/>
+        <location filename="../debug/ui/status_widget_base.ui" line="104"/>
         <source>&lt;b&gt;Status:&lt;/b&gt;</source>
         <translation>&lt;b&gt;Статус:&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="../debug/ui/status_widget_base.ui" line="97"/>
+        <location filename="../debug/ui/status_widget_base.ui" line="119"/>
         <source>Start</source>
         <translation>Запустить</translation>
+    </message>
+    <message>
+        <location filename="../debug/ui/status_widget_base.ui" line="56"/>
+        <source>User Guide</source>
+        <translation>Руководство пользователя</translation>
     </message>
 </context>
 </TS>
