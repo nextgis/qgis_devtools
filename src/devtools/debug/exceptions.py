@@ -146,9 +146,14 @@ class DebugAlreadyStartedInProcessError(DebugError):
             "Exceptions",
             "Please restart QGIS."
         )
-        detail = QgsApplication.translate(
-            "Exceptions",
-            "Multiple starts can cause the debuggee to hang."
+        detail = (
+            QgsApplication.translate(
+                "Exceptions",
+                "Multiple starts can cause the debuggee to hang. "
+            ) + QgsApplication.translate(
+                "Exceptions",
+                "This is a limitation of the used debug library."
+            )
         )
         # fmt: on
 

@@ -42,9 +42,11 @@ if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QWidget
 
 debugpy = None
+debugpy_internal = None
 pydevd = None
 if importlib.util.find_spec("debugpy"):
     import debugpy
+    import debugpy.server.api as debugpy_internal
     from debugpy._vendored.pydevd import pydevd
 
 
@@ -225,19 +227,29 @@ class DebugpyAdapter(AbstractDebugAdapter):
     def __start_listening(
         self, endpoints: List[Tuple[str, int]]
     ) -> Tuple[str, int]:
+        if not hasattr(debugpy_internal.listen, "called"):
+            # Support for older versions
+            debugpy_internal.listen.called = False  # type: ignore reportFunctionMemberAccess
+
+        if debugpy_internal.listen.called:  # type: ignore reportFunctionMemberAccess
+            # https://github.com/microsoft/debugpy/blob/1aff9aa541955b967f41895570d4c0b54a7504d9/src/debugpy/server/api.py#L143
+            raise DebugAlreadyStartedInProcessError
+
+        result_endpoint = ("", -1)
+
         for i, endpoint in enumerate(endpoints):
             logger.debug(f"Try listen at {endpoint}")
 
             try:
-                return debugpy.listen(
+                result_endpoint = debugpy.listen(
                     endpoint if endpoint[0] else endpoint[-1]
                 )
+                debugpy_internal.listen.called = True  # type: ignore reportFunctionMemberAccess
+
+                break
 
             except Exception as error:
                 error_message = str(error)
-
-                if "has already been called on this process" in error_message:
-                    raise DebugAlreadyStartedInProcessError from error
 
                 if i + 1 != len(endpoints):
                     continue
@@ -247,7 +259,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
                 raise
 
-        return ("", -1)
+        return result_endpoint
 
     @pyqtSlot()
     def __update_connected_state(self) -> None:
