@@ -62,7 +62,7 @@ def python_path() -> str:
             python_excectuable = str(python_without_version)
 
     elif sys.platform == "darwin":
-        python_excectuable = str(qgis_path + "bin/python3")
+        python_excectuable = str(qgis_path / "bin/python3")
 
     return python_excectuable
 
