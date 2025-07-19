@@ -23,6 +23,7 @@ from devtools.core.constants import PLUGIN_SETTINGS_GROUP
 class DevToolsSettings:
     """DevToolsSettings manages persistent plugin settings."""
 
+    KEY_LAST_RUN_VERSION = f"{PLUGIN_SETTINGS_GROUP}/other/lastRunVersion"
     KEY_DID_LAST_LAUNCH_FAIL = (
         f"{PLUGIN_SETTINGS_GROUP}/other/didLastLaunchFail"
     )
@@ -37,12 +38,28 @@ class DevToolsSettings:
         self.__settings = QgsSettings()
 
     @property
+    def last_run_version(self) -> str:
+        """Get the last run plugin version.
+
+        :return: Version string in the format "major.minor.patch".
+        :rtype: str
+        """
+        return self.__settings.value(
+            self.KEY_LAST_RUN_VERSION,
+            defaultValue="0.0.0",
+            type=str,
+        )
+
+    @last_run_version.setter
+    def last_run_version(self, version: str) -> None:
+        self.__settings.setValue(self.KEY_LAST_RUN_VERSION, version)
+
+    @property
     def did_last_launch_fail(self) -> bool:
         """Checks whether the last plugin launch failed.
 
-        Returns:
-            bool: True if the last launch failed, False otherwise.
-
+        :return: True if the last launch failed, False otherwise.
+        :rtype: bool
         """
         return self.__settings.value(
             self.KEY_DID_LAST_LAUNCH_FAIL,
@@ -58,9 +75,8 @@ class DevToolsSettings:
     def is_debug_logs_enabled(self) -> bool:
         """Check if debug logs are enabled.
 
-        Returns:
-            bool: True if debug logs are enabled, False otherwise.
-
+        :return: True if debug logs are enabled, False otherwise.
+        :rtype: bool
         """
         return self.__settings.value(
             self.KEY_IS_DEBUG_LOGS_ENABLED,

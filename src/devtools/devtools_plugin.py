@@ -21,14 +21,16 @@ from typing import TYPE_CHECKING, Optional
 from osgeo import gdal
 from qgis.core import Qgis, QgsApplication
 from qgis.gui import QgisInterface
-from qgis.PyQt.QtCore import QT_VERSION_STR, QObject, QSysInfo, pyqtSlot
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QToolBar
+from qgis.PyQt.QtCore import QT_VERSION_STR, QObject, QSysInfo, QUrl, pyqtSlot
+from qgis.PyQt.QtGui import QDesktopServices, QIcon
+from qgis.PyQt.QtWidgets import QAction, QPushButton, QToolBar
 from qgis.utils import iface
 
 from devtools.core import utils
+from devtools.core.compat import parse_version
 from devtools.core.constants import MENU_NAME, PACKAGE_NAME, PLUGIN_NAME
 from devtools.core.logging import logger
+from devtools.core.settings import DevToolsSettings
 from devtools.debug.debug_manager import DebugManager
 from devtools.devtools_interface import DevToolsInterface
 from devtools.notifier.message_bar_notifier import MessageBarNotifier
@@ -139,6 +141,8 @@ class DevToolsPlugin(DevToolsInterface):
         self.__load_about_dialog_actions()
         self.__add_icons_to_menu()
 
+        self.__check_last_version()
+
     def _unload(self) -> None:
         """Unload the plugin resources and clean up components."""
         self.__unload_about_dialog_actions()
@@ -227,6 +231,51 @@ class DevToolsPlugin(DevToolsInterface):
             iface.removePluginMenu(MENU_NAME, self.__open_settings_action)
             self.__open_settings_action.deleteLater()
             self.__open_settings_action = None
+
+    def __check_last_version(self) -> None:
+        """Check if the plugin version has changed and notify the user.
+
+        Show message with buttons for user guide, about dialog, and changelog.
+        """
+        settings = DevToolsSettings()
+        last_version = parse_version(settings.last_run_version)
+        current_version = parse_version(self.version)
+        if last_version == current_version:
+            return
+
+        settings.last_run_version = self.version
+
+        def open_docs() -> None:
+            url = self.metadata.get("general", "user_guide")
+            url += f"?{utils.utm_tags('start')}"
+            QDesktopServices.openUrl(QUrl(url))
+
+        def open_changelog() -> None:
+            repository = self.metadata.get("general", "repository")
+            url = f"{repository}/releases/tag/v{self.version}"
+            QDesktopServices.openUrl(QUrl(url))
+
+        changelog_button = QPushButton(self.tr("Open Changelog"))
+        changelog_button.clicked.connect(open_changelog)
+
+        guide_button = QPushButton(self.tr("Open User Guide"))
+        guide_button.clicked.connect(open_docs)
+
+        about_button = QPushButton(self.tr("About Plugin…"))
+        about_button.clicked.connect(self.__show_about_dialog)
+
+        if last_version == parse_version("0.0.0"):
+            message = self.tr("Plugin was successfully installed")
+            buttons = [guide_button, about_button]
+        else:
+            message = self.tr("Plugin was successfully updated")
+            buttons = [changelog_button, guide_button, about_button]
+
+        self.notifier.display_message(
+            message,
+            level=Qgis.MessageLevel.Success,
+            widgets=buttons,
+        )
 
     @pyqtSlot()
     def __show_about_dialog(self) -> None:
