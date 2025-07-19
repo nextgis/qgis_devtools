@@ -121,12 +121,15 @@ class DebugpyAdapter(AbstractDebugAdapter):
         :rtype: Tuple[bool, Optional[str]]
         """
         if debugpy is None:
-            return (
-                False,
-                self.tr('"{lib_name}" library is not installed.').format(
-                    lib_name="debugpy"
-                ),
+            message = self.tr('"{lib_name}" library is not installed.').format(
+                lib_name="debugpy"
             )
+            message += "\n\n"
+            message += self.tr(
+                "Installation instructions can be found in the user guide."
+            )
+
+            return (False, message)
 
         return True, None
 
@@ -182,8 +185,8 @@ class DebugpyAdapter(AbstractDebugAdapter):
             QTimer.singleShot(0, self.__show_start_notification)
         else:
             logger.info(
-                self.tr(
-                    f"Debug session started at {self.__active_hostname}:{self.__active_port}"
+                self.tr("Debug session started at {hostname}:{port}").format(
+                    hostname=self.__active_hostname, port=self.__active_port
                 ),
             )
 
@@ -293,8 +296,8 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
         notifier = DevToolsInterface.instance().notifier
         self.__message_id = notifier.display_message(
-            self.tr(
-                f"Debug session started at {self.__active_hostname}:{self.__active_port}"
+            self.tr("Debug session started at {hostname}:{port}").format(
+                hostname=self.__active_hostname, port=self.__active_port
             ),
             widgets=[copy_params_button],
         )

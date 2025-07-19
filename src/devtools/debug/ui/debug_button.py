@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Optional
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import Qt, QUrl, pyqtSignal, pyqtSlot
+from qgis.PyQt.QtGui import QDesktopServices, QIcon
 from qgis.PyQt.QtWidgets import (
     QLabel,
     QMenu,
@@ -31,7 +31,9 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.utils import iface
 
+from devtools.core import utils
 from devtools.debug.enums import DebugState
+from devtools.devtools_interface import DevToolsInterface
 from devtools.ui.utils import draw_icon, material_icon
 
 if TYPE_CHECKING:
@@ -141,6 +143,15 @@ class DebugButton(QToolButton):
         self.__status_widget.start_stop_button.clicked.connect(
             self.toggle_debug_state
         )
+
+        # Help button
+        self.__status_widget.help_button.setIcon(material_icon("help"))
+        self.__status_widget.help_button.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonIconOnly
+        )
+        self.__status_widget.help_button.clicked.connect(self.__open_docs)
+
+        # Settings button
         self.__status_widget.settings_button.setIcon(
             QIcon(":images/themes/default/console/iconSettingsConsole.svg")
         )
@@ -170,3 +181,11 @@ class DebugButton(QToolButton):
         self.setStyleSheet("QToolButton::menu-indicator { image: none; }")
 
         self.set_state()
+
+    @pyqtSlot()
+    def __open_docs(self) -> None:
+        url = DevToolsInterface.instance().metadata.get(
+            "general", "user_guide"
+        )
+        url += f"?{utils.utm_tags('debug')}"
+        QDesktopServices.openUrl(QUrl(url))
