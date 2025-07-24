@@ -16,12 +16,20 @@
 
 
 import sys
+import textwrap
 from typing import TYPE_CHECKING, Optional
 
 from osgeo import gdal
 from qgis.core import Qgis, QgsApplication
 from qgis.gui import QgisInterface
-from qgis.PyQt.QtCore import QT_VERSION_STR, QObject, QSysInfo, QUrl, pyqtSlot
+from qgis.PyQt.QtCore import (
+    QT_VERSION_STR,
+    QObject,
+    QSysInfo,
+    QTimer,
+    QUrl,
+    pyqtSlot,
+)
 from qgis.PyQt.QtGui import QDesktopServices, QIcon
 from qgis.PyQt.QtWidgets import QAction, QPushButton, QToolBar
 from qgis.utils import iface
@@ -91,6 +99,7 @@ class DevToolsPlugin(DevToolsInterface):
         self.__about_plugin_help_action = None
         self.__devtools_settings_page_factory = None
         self.__open_settings_action = None
+        self.__is_integrated_into_python_console = False
 
     # @property
     # def toolbar(self) -> QToolBar:
@@ -143,8 +152,19 @@ class DevToolsPlugin(DevToolsInterface):
 
         self.__check_last_version()
 
+        iface.actionShowPythonDialog().triggered.connect(
+            self.__on_python_console_triggered
+        )
+        if iface.actionShowPythonDialog().isChecked():
+            self.__on_python_console_triggered()
+
     def _unload(self) -> None:
         """Unload the plugin resources and clean up components."""
+        iface.actionShowPythonDialog().triggered.disconnect(
+            self.__on_python_console_triggered
+        )
+
+        self.__deintegrate_from_python_console()
         self.__unload_about_dialog_actions()
         self.__unload_debug_manager()
         self.__unload_settings_page()
@@ -231,6 +251,44 @@ class DevToolsPlugin(DevToolsInterface):
             iface.removePluginMenu(MENU_NAME, self.__open_settings_action)
             self.__open_settings_action.deleteLater()
             self.__open_settings_action = None
+
+    @pyqtSlot()
+    def __on_python_console_triggered(self) -> None:
+        if self.__is_integrated_into_python_console:
+            return
+
+        QTimer.singleShot(0, self.__integrate_into_python_console)
+
+    def __integrate_into_python_console(self) -> None:
+        from console.console import (  # noqa: PLC0415
+            _console as qgis_python_console,
+        )
+
+        interpreter = qgis_python_console.console.shell._interpreter  # noqa: SLF001
+        payload = [
+            "from devtools import DevToolsInterface",
+            "devtools = DevToolsInterface.instance()",
+        ]
+        for line in payload:
+            interpreter.runsource(line)
+        self.__is_integrated_into_python_console = True
+
+    def __deintegrate_from_python_console(self) -> None:
+        if not self.__is_integrated_into_python_console:
+            return
+
+        from console.console import (  # noqa: PLC0415
+            _console as qgis_python_console,
+        )
+
+        interpreter = qgis_python_console.console.shell._interpreter  # noqa: SLF001
+        payload = textwrap.dedent("""
+            try:
+                del devtools
+            except NameError:
+                pass
+        """)
+        interpreter.runsource(payload)
 
     def __check_last_version(self) -> None:
         """Check if the plugin version has changed and notify the user.
