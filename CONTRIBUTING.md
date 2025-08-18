@@ -231,7 +231,7 @@ To update translations:
 ### Before Reporting
 
 - Check existing [issues](https://github.com/nextgis/qgis_devtools/issues) to avoid duplicates
-- Ensure you're using the latest plugin version
+- Ensure you're using the [latest plugin version](https://plugins.qgis.org/plugins/devtools/#plugin-versions)
 - Gather relevant information (QGIS version, OS, plugin version, logs)
 
 ### Bug Reports
@@ -277,12 +277,12 @@ Include:
 1. **Provide clear description** of changes and motivation
 2. **Include verification steps** for reviewers
 3. **Keep changes focused** - one feature/fix per PR
+4. **When the original repository changes, perform a rebase to keep your branch up to date**
 
 ### Review Process
 
 - Maintainers will review your PR and may request changes
 - Address feedback by pushing new commits to your branch
-- When the original repository changes, perform a rebase to keep your branch up to date
 - Once approved, maintainers will merge your PR
 - Consider your PR a learning opportunity - feedback helps improve code quality
 
@@ -325,13 +325,7 @@ Contributors are recognized in:
 1. **Enable plugin debug messages**:
    - Settings → Options → QGIS DevTools → Enable plugin debug messages
 
-2. **Enable QGIS Developer Tools**:
-   - Settings → Options → Advanced → Enable developer tools
-   - View → Panels → Log Messages
-
-3. **Use Python Console** in QGIS for quick testing
-
-4. **Remote Debugging**:
+2. **Remote Debugging**:
    - Use the plugin's own debugging capabilities
    - Set up VS Code with Python debugger
    - Connect to the debugpy server started by the plugin
