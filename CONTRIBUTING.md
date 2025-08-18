@@ -55,7 +55,7 @@ QGIS DevTools is a toolkit for QGIS plugin developers that provides advanced deb
 
 4. **Configure the development environment**:
    ```bash
-   python setup.py config vscode --qgis Vanilla
+   python setup.py config vscode
    ```
 
 ## Building and Testing
@@ -82,17 +82,17 @@ QGIS DevTools is a toolkit for QGIS plugin developers that provides advanced deb
 
 **Install in development mode** (creates symlinks, changes reflect immediately):
 ```bash
-python setup.py install --qgis Vanilla --editable
+python setup.py install --editable
 ```
 
 **Install normally**:
 ```bash
-python setup.py install --qgis Vanilla
+python setup.py install
 ```
 
 **Force reinstall**:
 ```bash
-python setup.py install --qgis Vanilla --force
+python setup.py install --force
 ```
 
 ### Testing the Plugin
@@ -107,7 +107,7 @@ python setup.py install --qgis Vanilla --force
 ### Uninstalling
 
 ```bash
-python setup.py uninstall --qgis Vanilla
+python setup.py uninstall
 ```
 
 ### Available Build Commands
@@ -172,7 +172,7 @@ The main source code is organized as follows:
 - `src/devtools/core/` - Common code (utilities, settings, constants, compatibility)
 - `src/devtools/shared/` - Base classes and shared components
 - `src/devtools/debug/` - Feature directory for debug-related classes and interface
-- `src/devtools/ui/` - Shared widgets and helper functions
+- `src/devtools/ui/` - Common widgets and helper functions
 - `src/devtools/i18n/` - Translation files
 - `src/devtools/resources/` - Icons and other resources
 - `tests/` - Test files (if any)
@@ -231,12 +231,12 @@ To update translations:
 ### Before Reporting
 
 - Check existing [issues](https://github.com/nextgis/qgis_devtools/issues) to avoid duplicates
-- Ensure you're using a [supported plugin version](https://plugins.qgis.org/plugins/devtools/#plugin-versions)
+- Ensure you're using the latest plugin version
 - Gather relevant information (QGIS version, OS, plugin version, logs)
 
 ### Bug Reports
 
-Use the [bug report template](.github/ISSUE_TEMPLATE/01_bug_report.yaml) and include:
+Include:
 
 - Clear description of the issue
 - Steps to reproduce
@@ -247,7 +247,7 @@ Use the [bug report template](.github/ISSUE_TEMPLATE/01_bug_report.yaml) and inc
 
 ### Feature Requests
 
-Use the [feature request template](.github/ISSUE_TEMPLATE/02_feature_request.yaml) and include:
+Include:
 
 - Clear description of the proposed feature
 - Use case and motivation
@@ -274,16 +274,15 @@ Use the [feature request template](.github/ISSUE_TEMPLATE/02_feature_request.yam
 
 ### Pull Request Guidelines
 
-1. **Use the [PR template](.github/PULL_REQUEST_TEMPLATE.md)**
-2. **Provide clear description** of changes and motivation
-3. **Include verification steps** for reviewers
-4. **Keep changes focused** - one feature/fix per PR
-5. **Update version info** if applicable (in metadata.txt)
+1. **Provide clear description** of changes and motivation
+2. **Include verification steps** for reviewers
+3. **Keep changes focused** - one feature/fix per PR
 
 ### Review Process
 
 - Maintainers will review your PR and may request changes
 - Address feedback by pushing new commits to your branch
+- When the original repository changes, perform a rebase to keep your branch up to date
 - Once approved, maintainers will merge your PR
 - Consider your PR a learning opportunity - feedback helps improve code quality
 
@@ -294,6 +293,8 @@ Use the [feature request template](.github/ISSUE_TEMPLATE/02_feature_request.yam
 - **Documentation**: [User Guide](https://docs.nextgis.com/docs_ngqgis/source/devtools.html)
 - **Issues**: [GitHub Issues](https://github.com/nextgis/qgis_devtools/issues)
 - **Discord**: [NextGIS Discord](https://discord.gg/V3G9snXGy5)
+- **Forum**: [NextGIS Community](https://community.nextgis.com/)
+- **Telegram**: [NextGIS Talks](https://t.me/nextgis_talks)
 - **Commercial Support**: [Contact NextGIS](https://nextgis.com/contact/?utm_source=github&utm_medium=contributing&utm_campaign=devtools)
 
 ### Code of Conduct
@@ -321,13 +322,16 @@ Contributors are recognized in:
 
 ### Debugging the Plugin
 
-1. **Enable QGIS Developer Tools**:
+1. **Enable plugin debug messages**:
+   - Settings → Options → QGIS DevTools → Enable plugin debug messages
+
+2. **Enable QGIS Developer Tools**:
    - Settings → Options → Advanced → Enable developer tools
    - View → Panels → Log Messages
 
-2. **Use Python Console** in QGIS for quick testing
+3. **Use Python Console** in QGIS for quick testing
 
-3. **Remote Debugging**:
+4. **Remote Debugging**:
    - Use the plugin's own debugging capabilities
    - Set up VS Code with Python debugger
    - Connect to the debugpy server started by the plugin
@@ -335,6 +339,8 @@ Contributors are recognized in:
 ### Working with QGIS APIs
 
 - Refer to [QGIS API Documentation](https://qgis.org/pyqgis/)
+- [QGIS Developer Guide](https://docs.qgis.org/latest/en/docs/developers_guide/index.html)
+- [PyQGIS Developer Cookbook](https://docs.qgis.org/latest/en/docs/pyqgis_developer_cookbook/index.html)
 - Use QGIS Python Console for API exploration
 - Follow QGIS plugin development best practices
 
