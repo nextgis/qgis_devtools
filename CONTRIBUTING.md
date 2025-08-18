@@ -57,12 +57,6 @@ QGIS DevTools is a toolkit for QGIS plugin developers that provides advanced deb
    ```bash
    python setup.py config vscode --qgis Vanilla
    ```
-   
-   Available QGIS build options:
-   - `Vanilla` - Standard QGIS installation
-   - `NextGIS` - NextGIS QGIS build
-   - `VanillaFlatpak` - QGIS installed via Flatpak
-   - `NextGISFlatpak` - NextGIS QGIS via Flatpak
 
 ## Building and Testing
 
@@ -163,15 +157,22 @@ pre-commit run --all-files
 
 - **Python Version**: Support Python 3.7+
 - **Line Length**: 79 characters maximum
+- **Code Style**: Follow PEP8 conventions. When overriding Qt base class methods that use camelCase, suppress linting with `# noqa: N802`
 - **Docstrings**: Follow PEP 257 conventions
 - **Type Hints**: Use type annotations where appropriate
 - **License Headers**: All Python files must include the GPL license header
 - **Import Organization**: Use isort-compatible import ordering
+- **PyQt Imports**: Import PyQt classes from the qgis module for better compatibility (e.g., `from qgis.PyQt.QtCore import QTimer`)
 
-### File Structure
+### Project Structure
+
+The main source code is organized as follows:
 
 - `src/devtools/` - Main plugin source code
-- `src/devtools/ui/` - UI files and related code
+- `src/devtools/core/` - Common code (utilities, settings, constants, compatibility)
+- `src/devtools/shared/` - Base classes and shared components
+- `src/devtools/debug/` - Feature directory for debug-related classes and interface
+- `src/devtools/ui/` - Shared widgets and helper functions
 - `src/devtools/i18n/` - Translation files
 - `src/devtools/resources/` - Icons and other resources
 - `tests/` - Test files (if any)
@@ -186,6 +187,7 @@ We welcome various types of contributions:
 - **Feature enhancements** - Improve existing features
 - **New features** - Add new debugging tools or capabilities
 - **Documentation** - Improve docs, comments, or examples
+  - For user documentation updates and corrections, use: https://github.com/nextgis/docs_ngqgis/edit/en/source/devtools.rst
 - **Translations** - Add or update language translations
 - **Testing** - Add tests or improve test coverage
 
