@@ -13,6 +13,10 @@ QGIS DevTools is a toolkit for QGIS plugin developers. It allows you to launch a
 Full usage and setup guide is available at
 [https://docs.nextgis.com/docs_ngqgis/source/devtools.html](https://docs.nextgis.com/docs_ngqgis/source/devtools.html?utm_source=qgis_plugin&utm_medium=readme&utm_campaign=constant&utm_term=devtools&utm_content=en)
 
+🛠️ **Contributing**
+
+Interested in contributing? Check out our [Contributing Guide](CONTRIBUTING.md) for development setup, coding standards, and contribution guidelines.
+
 ## License
 
 This program is licensed under GNU GPL v.2 or any later version.
