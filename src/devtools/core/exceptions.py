@@ -31,6 +31,7 @@ class DevToolsExceptionInfoMixin:
     _detail: Optional[str]
     _try_again: Optional[Callable[[], Any]]
     _actions: List[Tuple[str, Callable[[], Any]]]
+    _need_logs: bool
 
     def __init__(
         self,
@@ -74,6 +75,7 @@ class DevToolsExceptionInfoMixin:
         self._try_again = None
 
         self._actions = []
+        self._need_logs = True
 
     @property
     def error_id(self) -> str:
@@ -147,6 +149,15 @@ class DevToolsExceptionInfoMixin:
         :type callback: Callable[[], Any]
         """
         self._actions.append((name, callback))
+
+    @property
+    def need_logs(self) -> bool:
+        """Indicate whether logs are needed for this exception.
+
+        :returns: True if logs are needed, False otherwise.
+        :rtype: bool
+        """
+        return self._need_logs
 
     if sys.version_info < (3, 11):
 

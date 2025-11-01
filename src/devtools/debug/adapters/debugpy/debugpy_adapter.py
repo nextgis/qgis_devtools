@@ -185,7 +185,11 @@ class DebugpyAdapter(AbstractDebugAdapter):
         :raises DebugLibraryNotInstalledError: If debugpy is not installed.
         """
         if not self.is_installed:
-            raise DebugLibraryNotInstalledError("debugpy")
+            error = DebugLibraryNotInstalledError("debugpy")
+            error.add_action(
+                self.tr("User Guide"), lambda: self.open_docs.emit()
+            )
+            raise error
 
         settings = DebugpySettings()
 

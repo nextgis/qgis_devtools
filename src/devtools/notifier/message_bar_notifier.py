@@ -38,6 +38,23 @@ if TYPE_CHECKING:
     assert isinstance(iface, QgisInterface)
 
 
+def let_us_know() -> None:
+    """Open the issue tracker URL in the default web browser."""
+    plugin = DevToolsInterface.instance()
+    tracker_url = plugin.metadata.get("general", "tracker")
+
+    if "github" in tracker_url:
+        QDesktopServices.openUrl(QUrl(tracker_url))
+    else:
+        utm = utm_tags("error")
+        QDesktopServices.openUrl(QUrl(f"{tracker_url}/?{utm}"))
+
+
+def open_logs() -> None:
+    """Open the QGIS message log."""
+    iface.openMessageLog()
+
+
 class MessageBarNotifier(NotifierInterface):
     """Notifier implementation for displaying messages and exceptions in QGIS.
 
@@ -161,19 +178,6 @@ class MessageBarNotifier(NotifierInterface):
                 iface.mainWindow(), user_message, error.detail or ""
             )
 
-        def let_us_know() -> None:
-            plugin = DevToolsInterface.instance()
-            tracker_url = plugin.metadata.get("general", "tracker")
-
-            if "github" in tracker_url:
-                QDesktopServices.openUrl(QUrl(tracker_url))
-            else:
-                utm = utm_tags("error")
-                QDesktopServices.openUrl(QUrl(f"{tracker_url}/?{utm}"))
-
-        def open_logs() -> None:
-            iface.openMessageLog()
-
         if error.try_again is not None:
 
             def try_again() -> None:
@@ -193,7 +197,7 @@ class MessageBarNotifier(NotifierInterface):
             button = QPushButton(self.tr("Details"))
             button.pressed.connect(show_details)
             widget.layout().addWidget(button)
-        else:
+        elif error.need_logs:
             button = QPushButton(self.tr("Open logs"))
             button.pressed.connect(open_logs)
             widget.layout().addWidget(button)

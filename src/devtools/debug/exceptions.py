@@ -82,15 +82,18 @@ class DebugLibraryNotInstalledError(DebugError):
         base_message = QgsApplication.translate(
             "Exceptions", '"{lib_name}" library is not installed.'
         ).format(lib_name=lib_name)
+        # fmt: off
         fix_message = QgsApplication.translate(
             "Exceptions",
-            "Installation instructions can be found in the user guide.",
+            "Installation instructions can be found in the user guide."
         )
+        # fmt: on
         separator = " \u200b"
         super().__init__(
             log_message=base_message,
             user_message=f"{base_message}{separator}{fix_message}",
         )
+        self._need_logs = False
 
 
 class DebugPortInUseError(DebugError):
