@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from qgis.core import QgsApplication
-from qgis.PyQt.QtCore import QByteArray, QSize, Qt
+from qgis.PyQt.QtCore import QBuffer, QByteArray, QIODevice, QSize, Qt
 from qgis.PyQt.QtGui import QIcon, QPainter, QPixmap
 from qgis.PyQt.QtSvg import QSvgRenderer
 from qgis.PyQt.QtWidgets import QLabel
@@ -42,6 +42,20 @@ def draw_icon(label: QLabel, icon: QIcon, *, size: int = 24) -> None:
     pixmap = icon.pixmap(icon.actualSize(QSize(size, size)))
     label.setPixmap(pixmap)
     label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+
+def qgis_icon(icon_name: str) -> QIcon:
+    """Return a QGIS theme icon by name.
+
+    :param icon_name: Name of the icon.
+    :type icon_name: str
+    :returns: QIcon instance for the QGIS theme icon.
+    :rtype: QIcon
+    """
+    icon = QgsApplication.getThemeIcon(icon_name)
+    if icon.isNull():
+        icon = QIcon(f":images/themes/default/{icon_name}")
+    return icon
 
 
 def plugin_icon(icon_path: Union[Path, str, None] = None) -> QIcon:
@@ -78,12 +92,16 @@ def material_icon(
     :raises FileNotFoundError: If the SVG file is not found.
     :raises ValueError: If the SVG cannot be loaded.
     """
-    name = f"{name}.svg" if not name.endswith(".svg") else name
-
     plugin = DevToolsInterface.instance()
-    svg_path = plugin.path / "resources" / "icons" / "material" / name
+    material_icons_path = plugin.path / "resources" / "icons" / "material"
 
-    if not svg_path.exists():
+    svg_path = None
+    for path in material_icons_path.glob(f"{name}*"):
+        if path.is_file():
+            svg_path = path
+            break
+
+    if svg_path is None:
         message = f"SVG file not found: {svg_path}"
         raise FileNotFoundError(message)
 
@@ -110,3 +128,23 @@ def material_icon(
     painter.end()
 
     return QIcon(pixmap)
+
+
+def icon_to_base64(icon: QIcon, size: Optional[int] = None) -> str:
+    """Convert a QIcon to a base64-encoded string.
+
+    :param icon: QIcon to convert.
+    :type icon: QIcon
+    :returns: Base64-encoded string of the icon.
+    :rtype: str
+    """
+    icon_size = QSize(32, 32) if size is None else QSize(size, size)
+    pixmap = icon.pixmap(icon_size)
+
+    buffer = QByteArray()
+    qbuffer = QBuffer(buffer)
+    qbuffer.open(QIODevice.OpenModeFlag.WriteOnly)
+    pixmap.save(qbuffer, "PNG")
+    qbuffer.close()
+
+    return "data:image/png;base64, " + buffer.toBase64().data().decode("utf-8")
