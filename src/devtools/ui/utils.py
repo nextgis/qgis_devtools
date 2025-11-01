@@ -70,10 +70,60 @@ def plugin_icon(icon_path: Union[Path, str, None] = None) -> QIcon:
     icons_path = plugin.path / "resources" / "icons"
     if icon_path is None:
         icon_path = f"{PACKAGE_NAME}_logo.svg"
+
     full_path = icons_path / icon_path
     if not full_path.exists():
         logger.warning(f"Icon {icon_path} does not exist")
+        return QIcon(str(full_path))
+
+    # Repaint only when needed and only for SVG icons
+    if full_path.suffix.lower() == ".svg":
+        effective_color = QgsApplication.palette().text().color().name()
+        return render_svg_icon(full_path, color=effective_color)
+
     return QIcon(str(full_path))
+
+
+def render_svg_icon(
+    svg_path: Path, *, color: Optional[str] = None, size: Optional[int] = None
+) -> QIcon:
+    """Render an SVG file into a QIcon with optional recolor and resize.
+
+    :param svg_path: Filesystem path to the SVG file.
+    :type svg_path: Path
+    :param color: Color to apply instead of white fill. If None, keep the
+        original fills unchanged.
+    :type color: Optional[str]
+    :param size: Output icon size in pixels. If None, use SVG default size.
+    :type size: Optional[int]
+    :returns: Rendered QIcon.
+    :rtype: QIcon
+    :raises ValueError: If the SVG cannot be loaded.
+    """
+    svg_content = svg_path.read_text(encoding="utf-8")
+
+    # Replace only pure white fills to preserve multi-colored icons
+    if color:
+        modified_svg = svg_content.replace('fill="#ffffff"', f'fill="{color}"')
+        modified_svg = modified_svg.replace("fill:#ffffff", f"fill:{color}")
+    else:
+        modified_svg = svg_content
+
+    byte_array = QByteArray(modified_svg.encode("utf-8"))
+    renderer = QSvgRenderer()
+    if not renderer.load(byte_array):
+        message = f"Failed to load SVG: {svg_path}"
+        raise ValueError(message)
+
+    target_size = renderer.defaultSize() if size is None else QSize(size, size)
+    pixmap = QPixmap(target_size)
+    pixmap.fill(Qt.GlobalColor.transparent)
+
+    painter = QPainter(pixmap)
+    renderer.render(painter)
+    painter.end()
+
+    return QIcon(pixmap)
 
 
 def material_icon(
@@ -105,29 +155,8 @@ def material_icon(
         message = f"SVG file not found: {svg_path}"
         raise FileNotFoundError(message)
 
-    svg_content = svg_path.read_text()
-
-    if color == "":
-        color = QgsApplication.palette().text().color().name()
-
-    modified_svg = svg_content.replace('fill="#ffffff"', f'fill="{color}"')
-
-    byte_array = QByteArray(modified_svg.encode("utf-8"))
-    renderer = QSvgRenderer()
-    if not renderer.load(byte_array):
-        message = "Failed to load SVG."
-        raise ValueError(message)
-
-    pixmap = QPixmap(
-        renderer.defaultSize() if size is None else QSize(size, size)
-    )
-    pixmap.fill(Qt.GlobalColor.transparent)
-
-    painter = QPainter(pixmap)
-    renderer.render(painter)
-    painter.end()
-
-    return QIcon(pixmap)
+    effective_color = color or QgsApplication.palette().text().color().name()
+    return render_svg_icon(svg_path, color=effective_color, size=size)
 
 
 def icon_to_base64(icon: QIcon, size: Optional[int] = None) -> str:
