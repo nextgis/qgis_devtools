@@ -24,9 +24,12 @@ class IdeInfo:
 
     :param full_name: Full name of the IDE.
     :type full_name: str
+    :param url: URL for the IDE's documentation or website.
+    :type url: str
     """
 
     full_name: str
+    url: str
 
 
 class Ide(Enum):
@@ -35,6 +38,8 @@ class Ide(Enum):
     Each member contains an :class:`IdeInfo` instance with IDE details.
     """
 
-    VSCODE = IdeInfo("Visual Studio Code")
-    VISUAL_STUDIO = IdeInfo("Visual Studio")
-    ECLIPSE = IdeInfo("Eclipse")
+    VSCODE = IdeInfo("Visual Studio Code", "https://code.visualstudio.com/")
+    VISUAL_STUDIO = IdeInfo(
+        "Visual Studio", "https://visualstudio.microsoft.com/"
+    )
+    ECLIPSE = IdeInfo("Eclipse", "https://eclipseide.org/")
