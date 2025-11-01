@@ -265,7 +265,13 @@ class DebugManager(DebugInterface):
         script_path_literal = QgsProcessingUtils.stringToPythonLiteral(
             str(script_path)
         )
-        current_tab.console_widget.shell.runCommand(
+        shell = (
+            current_tab.console_widget
+            if hasattr(current_tab, "console_widget")
+            else current_tab.pythonconsole
+        ).shell
+
+        shell.runCommand(
             f"devtools.debugger.debug_script(Path({script_path_literal}))",
             skipHistory=True,
         )
@@ -280,7 +286,11 @@ class DebugManager(DebugInterface):
         )
 
         # Check if the script is empty
-        filename = current_tab.code_editor_widget.filePath()
+        filename = (
+            current_tab.code_editor_widget.filePath()
+            if hasattr(current_tab, "code_editor_widget")
+            else current_tab.tabwidget.currentWidget().path
+        )
         if not filename and not current_tab.isModified():
             empty_editor_message = QgsApplication.translate(
                 "PythonConsole", "Hey, type something to run!"
