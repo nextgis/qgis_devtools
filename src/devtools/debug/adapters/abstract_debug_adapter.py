@@ -16,7 +16,8 @@
 
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from pathlib import Path
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from qgis.PyQt.QtCore import QObject, pyqtSignal, pyqtSlot
 
@@ -35,6 +36,9 @@ class AbstractDebugAdapter(QObject, metaclass=QObjectMetaClass):
 
     state_changed = pyqtSignal(DebugState)
     """Signal emitted when the debug adapter state changes."""
+
+    open_docs = pyqtSignal()
+    """Signal emitted to open the documentation."""
 
     @classmethod
     @abstractmethod
@@ -66,6 +70,16 @@ class AbstractDebugAdapter(QObject, metaclass=QObjectMetaClass):
         """
         ...
 
+    @property
+    @abstractmethod
+    def is_installed(self) -> bool:
+        """Check if the debug adapter is installed.
+
+        :returns: True if the adapter is installed, False otherwise.
+        :rtype: bool
+        """
+        ...
+
     @abstractmethod
     def can_start(self) -> Tuple[bool, Optional[str]]:
         """Check if the debug adapter can be started.
@@ -94,6 +108,19 @@ class AbstractDebugAdapter(QObject, metaclass=QObjectMetaClass):
         This method should be implemented by subclasses to stop the debugging
         process.
         """
+        ...
+
+    @abstractmethod
+    def debug_script(self, script_path: Union[str, Path]) -> None:
+        """Debug the script.
+
+        :param script_path: Path to the script to debug.
+        """
+        ...
+
+    @abstractmethod
+    def breakpoint(self) -> None:
+        """Toggle breakpoint at the current line."""
         ...
 
     @classmethod

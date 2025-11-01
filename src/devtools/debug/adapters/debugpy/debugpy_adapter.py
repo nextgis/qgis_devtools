@@ -15,10 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import importlib.util
-from textwrap import dedent
-from typing import TYPE_CHECKING, List, Optional, Tuple
+import json
+import runpy
+from pathlib import Path
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from qgis.PyQt.QtCore import QObject, QTimer, pyqtSlot
+from qgis.PyQt.QtWidgets import QMenu, QMessageBox
+from qgis.utils import iface
 
 from devtools.core.enums import Ide
 from devtools.core.logging import logger
@@ -35,11 +39,17 @@ from devtools.debug.exceptions import (
     DebugPortInUseError,
 )
 from devtools.devtools_interface import DevToolsInterface
-from devtools.shared.ui import FlashingPushButton
+from devtools.shared.ui import (
+    FlashingPushButton,
+    FlashingToolButton,
+    WaitingDialog,
+)
 
 if TYPE_CHECKING:
-    from qgis.gui import QgsOptionsPageWidget
+    from qgis.gui import QgisInterface, QgsOptionsPageWidget
     from qgis.PyQt.QtWidgets import QWidget
+
+    assert isinstance(iface, QgisInterface)
 
 debugpy = None
 debugpy_internal = None
@@ -74,10 +84,6 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
         self.__state = DebugState.STOPPED
 
-        if debugpy is None:
-            logger.debug("debugpy is not installed")
-            return
-
         self.__timer = QTimer(self)
         self.__timer.setInterval(1000)  # 1s
         self.__timer.timeout.connect(self.__update_connected_state)
@@ -85,6 +91,14 @@ class DebugpyAdapter(AbstractDebugAdapter):
         self.__active_hostname = None
         self.__active_port = None
         self.__message_id = None
+
+        if not self.is_installed:
+            logger.debug("debugpy is not installed")
+            return
+
+        if not hasattr(debugpy_internal.listen, "called"):
+            # Support for older versions
+            debugpy_internal.listen.called = False  # type: ignore reportFunctionMemberAccess
 
     @classmethod
     def name(cls) -> str:
@@ -113,6 +127,15 @@ class DebugpyAdapter(AbstractDebugAdapter):
         """
         return self.__state
 
+    @property
+    def is_installed(self) -> bool:
+        """Check if the debug adapter is installed.
+
+        :returns: True if the adapter is installed, False otherwise.
+        :rtype: bool
+        """
+        return debugpy is not None
+
     def can_start(self) -> Tuple[bool, Optional[str]]:
         """Check if the debug adapter can be started.
 
@@ -120,16 +143,20 @@ class DebugpyAdapter(AbstractDebugAdapter):
                   contains the explanation.
         :rtype: Tuple[bool, Optional[str]]
         """
-        if debugpy is None:
-            message = self.tr('"{lib_name}" library is not installed.').format(
-                lib_name="debugpy"
-            )
-            message += "\n\n"
-            message += self.tr(
-                "Installation instructions can be found in the user guide."
-            )
+        error = None
 
-            return (False, message)
+        if not self.is_installed:
+            error = DebugLibraryNotInstalledError("debugpy")
+
+        elif debugpy_internal.listen.called:  # type: ignore reportFunctionMemberAccess
+            # https://github.com/microsoft/debugpy/blob/1aff9aa541955b967f41895570d4c0b54a7504d9/src/debugpy/server/api.py#L143
+            error = DebugAlreadyStartedInProcessError()
+
+        if error is not None:
+            message = error.user_message.replace("\u200b", "<br><br>")
+            if error.detail:
+                message += "<br><br>" + error.detail
+            return False, message
 
         return True, None
 
@@ -157,7 +184,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
         :raises DebugLibraryNotInstalledError: If debugpy is not installed.
         """
-        if debugpy is None:
+        if not self.is_installed:
             raise DebugLibraryNotInstalledError("debugpy")
 
         settings = DebugpySettings()
@@ -214,6 +241,72 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
         self.__set_state(DebugState.STOPPED)
 
+    def debug_script(self, script_path: Union[str, Path]) -> None:
+        """Debug the script.
+
+        :param script_path: Path to the script to debug.
+        """
+        script_path = Path(script_path)
+
+        if self.state == DebugState.STOPPED:
+            ok, reason = self.can_start()
+            if not ok:
+                message_box = QMessageBox(iface.mainWindow())
+                message_box.setIcon(QMessageBox.Icon.Warning)
+                message_box.setWindowTitle(self.tr("Cannot start debugging"))
+                message_box.setText(reason)
+                message_box.setStandardButtons(
+                    QMessageBox.StandardButtons()
+                    | QMessageBox.StandardButton.Ok
+                    | QMessageBox.StandardButton.Help
+                )
+                help_button = message_box.button(
+                    QMessageBox.StandardButton.Help
+                )
+                help_button.setText(self.tr("User Guide"))
+                help_button.clicked.connect(self.open_docs)
+                message_box.exec()
+                return
+
+            self.start()
+
+        if self.state != DebugState.RUNNING_AND_USER_CONNECTED:
+            title = self.tr("Waiting for client...")
+            message = self.tr(
+                "Waiting for client to connect to debugger at {host}:{port}"
+            ).format(host=self.__active_hostname, port=self.__active_port)
+            dialog = WaitingDialog(title, message, iface.mainWindow())
+
+            copy_params_button = FlashingPushButton(
+                self.tr("Copy launch.json template"), self.tr("Copied!")
+            )
+            copy_params_button.clicked.connect(self.__copy_params)
+
+            dialog.add_button(copy_params_button)
+
+            def checker() -> None:
+                if self.state == DebugState.RUNNING_AND_USER_CONNECTED:
+                    dialog.accept()
+
+            self.state_changed.connect(checker)
+            dialog.exec()
+
+            if dialog.result() != WaitingDialog.DialogCode.Accepted:
+                return
+
+        runpy.run_path(
+            script_path.as_posix(),
+            run_name="__main__",
+            init_globals={
+                "iface": iface,
+                "devtools": DevToolsInterface.instance(),
+            },
+        )
+
+    def breakpoint(self) -> None:
+        """Toggle breakpoint at the current line."""
+        debugpy.breakpoint()
+
     @classmethod
     def create_settings_widget(
         cls, parent: Optional["QWidget"] = None
@@ -230,10 +323,6 @@ class DebugpyAdapter(AbstractDebugAdapter):
     def __start_listening(
         self, endpoints: List[Tuple[str, int]]
     ) -> Tuple[str, int]:
-        if not hasattr(debugpy_internal.listen, "called"):
-            # Support for older versions
-            debugpy_internal.listen.called = False  # type: ignore reportFunctionMemberAccess
-
         if debugpy_internal.listen.called:  # type: ignore reportFunctionMemberAccess
             # https://github.com/microsoft/debugpy/blob/1aff9aa541955b967f41895570d4c0b54a7504d9/src/debugpy/server/api.py#L143
             raise DebugAlreadyStartedInProcessError
@@ -254,10 +343,12 @@ class DebugpyAdapter(AbstractDebugAdapter):
             except Exception as error:
                 error_message = str(error)
 
-                if i + 1 != len(endpoints):
+                if i + 1 != len(
+                    endpoints
+                ) and DebugPortInUseError.is_port_in_use_error(error_message):
                     continue
 
-                if "Address already in use" in error_message:
+                if DebugPortInUseError.is_port_in_use_error(error_message):
                     raise DebugPortInUseError(endpoint[-1]) from error
 
                 raise
@@ -289,9 +380,19 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
     @pyqtSlot()
     def __show_start_notification(self) -> None:
-        copy_params_button = FlashingPushButton(
+        copy_params_button = FlashingToolButton(
             self.tr("Copy launch.json template"), self.tr("Copied!")
         )
+        menu = QMenu(copy_params_button)
+        copy_with_mappings_action = menu.addAction(
+            self.tr("Copy launch.json template with path mappings")
+        )
+        copy_with_mappings_action.triggered.connect(
+            lambda: self.__copy_params(True)
+        )
+        copy_params_button.setMenu(menu)
+        copy_params_button.setPopupMode(FlashingToolButton.MenuButtonPopup)
+
         copy_params_button.clicked.connect(self.__copy_params)
 
         notifier = DevToolsInterface.instance().notifier
@@ -303,10 +404,21 @@ class DebugpyAdapter(AbstractDebugAdapter):
         )
 
     @pyqtSlot()
-    def __copy_params(self) -> None:
+    def __copy_params(self, with_mappings: bool = False) -> None:
         plugins_path = DevToolsInterface.instance().path.parent.as_posix()
 
-        content = dedent(f"""
+        mappings = ""
+        if with_mappings:
+            mappings = f"""
+                "pathMappings": [
+                    {{
+                        "localRoot": "${{workspaceFolder}}",
+                        "remoteRoot": "{plugins_path}/<YOUR_PLUGIN_NAME>"
+                    }}
+                ],
+            """
+
+        content = f"""
             {{
                 "version": "0.2.0",
                 "configurations": [
@@ -318,15 +430,24 @@ class DebugpyAdapter(AbstractDebugAdapter):
                             "host": "{self.__active_hostname}",
                             "port": {self.__active_port}
                         }},
-                        "pathMappings": [
-                            {{
-                                "localRoot": "${{workspaceFolder}}",
-                                "remoteRoot": "{plugins_path}/<YOUR_PLUGIN_NAME>"
-                            }}
-                        ],
+                        {mappings}
                         "justMyCode": true
                     }}
                 ]
             }}
-        """)
-        set_clipboard_data("application/json", content.encode(), content)
+        """
+
+        try:
+            parsed_json = json.loads(content)
+            formatted_content = json.dumps(
+                parsed_json, indent=4, ensure_ascii=False, sort_keys=False
+            )
+        except Exception:
+            formatted_content = content
+
+        set_clipboard_data(
+            "application/json", formatted_content.encode(), formatted_content
+        )
+        set_clipboard_data(
+            "application/json", formatted_content.encode(), formatted_content
+        )

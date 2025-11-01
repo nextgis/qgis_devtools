@@ -83,19 +83,25 @@ class DebugLibraryNotInstalledError(DebugError):
             "Exceptions", '"{lib_name}" library is not installed.'
         ).format(lib_name=lib_name)
         fix_message = QgsApplication.translate(
-            "Exceptions", "Please install the required package."
+            "Exceptions",
+            "Installation instructions can be found in the user guide.",
         )
+        separator = " \u200b"
         super().__init__(
             log_message=base_message,
-            user_message=f"{base_message} {fix_message}",
+            user_message=f"{base_message}{separator}{fix_message}",
         )
 
 
 class DebugPortInUseError(DebugError):
-    """Debug port is already in use."""
+    """Debug port is already in use.
+
+    Use this exception when the selected debug port is busy.
+    """
 
     def __init__(self, port: int) -> None:
-        """Initialize DebugPortInUseError.
+        """
+        Initialize error for busy debug port.
 
         :param port: Port number that is in use.
         :type port: int
@@ -106,15 +112,31 @@ class DebugPortInUseError(DebugError):
         fix_message = QgsApplication.translate(
             "Exceptions", "Please choose another port in settings."
         )
+        separator = " \u200b"
         super().__init__(
             log_message=base_message,
-            user_message=f"{base_message} {fix_message}",
+            user_message=f"{base_message}{separator}{fix_message}",
         )
         self.add_action(
             QgsApplication.translate("Exceptions", "Open settings"),
             lambda: iface.showOptionsDialog(
                 iface.mainWindow(), f"{PACKAGE_NAME}/debug"
             ),
+        )
+
+    @staticmethod
+    def is_port_in_use_error(error_message: str) -> bool:
+        """
+        Determine if error message means port is busy.
+
+        :param error_message: Error message string.
+        :type error_message: str
+        :returns: True if port is in use, False otherwise.
+        :rtype: bool
+        """
+        return (
+            "Address already in use" in error_message
+            or "[WinError 10048]" in error_message
         )
 
 
@@ -142,23 +164,23 @@ class DebugAlreadyStartedInProcessError(DebugError):
             "Exceptions",
             "Debug session has already been started in this process."
         )
-        user_message = base_message + " " + QgsApplication.translate(
+        fix_message = QgsApplication.translate(
             "Exceptions",
-            "Please restart QGIS."
+            "<b>Please restart QGIS</b>."
         )
         detail = (
             QgsApplication.translate(
                 "Exceptions",
-                "Multiple starts can cause the debuggee to hang. "
-            ) + QgsApplication.translate(
+                "Multiple debug starts can cause the debuggee to hang."
+            ) + " " + QgsApplication.translate(
                 "Exceptions",
                 "This is a limitation of the used debug library."
             )
         )
         # fmt: on
-
+        separator = " \u200b"
         super().__init__(
             log_message=base_message,
-            user_message=user_message,
+            user_message=f"{base_message}{separator}{fix_message}",
             detail=detail,
         )

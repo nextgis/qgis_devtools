@@ -107,7 +107,7 @@ class DevToolsInterface(QObject, metaclass=QObjectMetaClass):
 
     @property
     @abstractmethod
-    def debug(self) -> "DebugInterface":
+    def debugger(self) -> "DebugInterface":
         """Return the debug manager.
 
         :returns: An instance of DebugInterface.

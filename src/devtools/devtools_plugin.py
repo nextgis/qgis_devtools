@@ -123,7 +123,7 @@ class DevToolsPlugin(DevToolsInterface):
         return self.__notifier
 
     @property
-    def debug(self) -> "DebugInterface":
+    def debugger(self) -> "DebugInterface":
         """Return the debug manager.
 
         :returns: Debug manager instance.
@@ -271,6 +271,9 @@ class DevToolsPlugin(DevToolsInterface):
         ]
         for line in payload:
             interpreter.runsource(line)
+
+        self.__debug_manager.integrate_into_python_console(qgis_python_console)
+
         self.__is_integrated_into_python_console = True
 
     def __deintegrate_from_python_console(self) -> None:
@@ -280,6 +283,8 @@ class DevToolsPlugin(DevToolsInterface):
         from console.console import (  # noqa: PLC0415
             _console as qgis_python_console,
         )
+
+        self.__debug_manager.deintegrate_from_python_console()
 
         interpreter = qgis_python_console.console.shell._interpreter  # noqa: SLF001
         payload = textwrap.dedent("""

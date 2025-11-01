@@ -15,6 +15,7 @@
 # with this program; if not, see <https://www.gnu.org/licenses/>.
 
 
+import re
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
@@ -153,6 +154,9 @@ class MessageBarNotifier(NotifierInterface):
     ) -> None:
         def show_details() -> None:
             user_message = error.user_message.rstrip(".")
+            user_message = re.sub(
+                r"</?(i|b)\b[^>]*?>", "", user_message, flags=re.IGNORECASE
+            )
             QMessageBox.information(
                 iface.mainWindow(), user_message, error.detail or ""
             )

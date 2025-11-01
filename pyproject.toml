@@ -44,7 +44,7 @@ select = [
     "COM", # flake8-commas
     "E",   # pycodestyle errors
     "F",   # pyflakes
-    "FBT",  # flake8-boolean-trap
+    # "FBT",  # flake8-boolean-trap
     "FLY", # flynt
     "I",   # isort
     "ISC", #  flake8-implicit-str-concat
@@ -75,7 +75,7 @@ select = [
     "D",  # pydocstyle
     "FIX",  # flake8-fixme
 ]
-ignore = ["TD003", "FBT003", "ISC001", "COM812", "E501", "RUF001", "D100", "D104", "FIX002"]
+ignore = ["TD003", "ISC001", "COM812", "E501", "RUF001", "D100", "D104", "FIX002"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]

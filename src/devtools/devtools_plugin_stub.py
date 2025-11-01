@@ -88,7 +88,7 @@ class DevToolsPluginStub(DevToolsInterface):
         return self.__notifier
 
     @property
-    def debug(self) -> "DebugInterface":
+    def debugger(self) -> "DebugInterface":
         """Return the debug manager.
 
         :returns: An instance of DebugInterface.
