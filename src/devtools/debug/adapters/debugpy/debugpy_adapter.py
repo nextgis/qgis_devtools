@@ -395,7 +395,9 @@ class DebugpyAdapter(AbstractDebugAdapter):
             lambda: self.__copy_params(True)
         )
         copy_params_button.setMenu(menu)
-        copy_params_button.setPopupMode(FlashingToolButton.MenuButtonPopup)
+        copy_params_button.setPopupMode(
+            FlashingToolButton.ToolButtonPopupMode.MenuButtonPopup
+        )
 
         copy_params_button.clicked.connect(self.__copy_params)
 
