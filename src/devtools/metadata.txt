@@ -1,12 +1,12 @@
 [general]
 name=QGIS DevTools
-qgisMinimumVersion=3.22
+qgisMinimumVersion=3.32
 qgisMaximumVersion=4.99
 description=Advanced developer tools for QGIS. Includes remote debugging support via debugpy.
 description[ru]=Продвинутые инструменты для разработчиков QGIS. Включает поддержку удалённой отладки через debugpy.
 about=QGIS DevTools is a toolkit for QGIS plugin developers. It allows you to launch a debugpy server directly from QGIS and connect to the process from VS Code. In the future, more tools and new debugging libraries will be added to simplify everyday development tasks. Developed by NextGIS. Any feedback is welcome at https://nextgis.com/contact
 about[ru]=QGIS DevTools — это набор инструментов для разработчиков плагинов QGIS. Он позволяет запускать сервер debugpy прямо из QGIS и подключаться к процессу отладки из VS Code. В будущем будут добавлены новые инструменты и библиотеки для отладки, чтобы упростить повседневные задачи разработки. Разработан компанией NextGIS. Любые отзывы приветствуются на https://nextgis.com/contact
-version=1.3.0
+version=1.3.1
 author=NextGIS
 email=info@nextgis.com
 
@@ -22,6 +22,9 @@ deprecated=False
 supportsQt6=True
 
 changelog=
+    [1.3.1] - 2026.01.20:
+        * Fixed PopupMode enum usage for Qt6
+        * Updated minimum QGIS version to 3.32
     [1.3.0] - 2025.11.01:
         * Added the ability to debug scripts launched from the QGIS Python console
         * Added the ability to copy launch.json without path mappings
