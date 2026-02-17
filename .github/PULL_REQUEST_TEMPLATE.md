@@ -10,4 +10,4 @@
 
 - [ ] PR contains a description of the feature/bug or a link to the issue/task.
 - [ ] Description contains actions to verify the feature/bugfix.
-- [ ] I havk built this plugin, installed it into QGIS, and verified the feature/bugfix.
+- [ ] I have built this plugin, installed it into QGIS, and verified the feature/bugfix.
