@@ -48,23 +48,28 @@ def python_path() -> str:
     :returns: Path to the Python executable.
     :rtype: str
     """
-    python_excectuable = sys.executable
-    qgis_path = Path(python_excectuable).parent
+    python_executable = sys.executable
+    qgis_path = Path(python_executable).parent
 
     if sys.platform == "win32":
-        python_with_version = qgis_path / "python3.exe"
-        python_without_version = qgis_path / "python.exe"
+        for candidate in (qgis_path / "python3.exe", qgis_path / "python.exe"):
+            if candidate.exists():
+                return str(candidate)
+        return python_executable
 
-        if python_with_version.exists():
-            python_excectuable = str(python_with_version)
+    if sys.platform == "darwin":
+        wrapper = qgis_path / "python"
+        if wrapper.exists():
+            return str(wrapper)
 
-        elif python_without_version.exists():
-            python_excectuable = str(python_without_version)
+        for candidate in (qgis_path / "python3.12", qgis_path / "python3"):
+            if candidate.exists():
+                return str(candidate)
 
-    elif sys.platform == "darwin":
-        python_excectuable = str(qgis_path / "bin/python3")
+        return python_executable
 
-    return python_excectuable
+    # linux/other
+    return python_executable
 
 
 def set_clipboard_data(
