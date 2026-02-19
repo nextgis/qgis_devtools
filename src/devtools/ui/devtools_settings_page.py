@@ -17,6 +17,7 @@
 from pathlib import Path
 from typing import List, Optional
 
+from qgis.core import Qgis
 from qgis.gui import (
     QgsOptionsPageWidget,
     QgsOptionsWidgetFactory,
@@ -36,6 +37,8 @@ from devtools.core.logging import logger, update_logging_level
 from devtools.core.settings import DevToolsSettings
 from devtools.devtools_interface import DevToolsInterface
 from devtools.ui.utils import plugin_icon
+
+MIN_QGIS_VERSION_FOR_KEY = 33200
 
 
 class DevToolsSettingsPage(QgsOptionsPageWidget):
@@ -144,7 +147,9 @@ class DevToolsSettingsPageFactory(QgsOptionsWidgetFactory):
         super().__init__()
         self.setTitle(PLUGIN_NAME)
         self.setIcon(plugin_icon())
-        self.setKey(PACKAGE_NAME)
+
+        if Qgis.QGIS_VERSION_INT >= MIN_QGIS_VERSION_FOR_KEY:
+            self.setKey(PACKAGE_NAME)
 
     def path(self) -> List[str]:
         """Return the settings page path in the options dialog.
