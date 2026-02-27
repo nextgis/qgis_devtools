@@ -15,6 +15,7 @@
 # with this program; if not, see <https://www.gnu.org/licenses/>.
 
 
+import platform
 import sys
 from pathlib import Path
 from typing import Union
@@ -24,6 +25,7 @@ from qgis.PyQt.QtCore import QByteArray, QLocale, QMimeData
 from qgis.PyQt.QtGui import QClipboard
 
 from devtools.core.constants import PACKAGE_NAME
+from devtools.core.exceptions import DevToolsError
 
 
 def locale() -> str:
@@ -48,27 +50,35 @@ def python_path() -> str:
     :returns: Path to the Python executable.
     :rtype: str
     """
-    python_executable = sys.executable
-    qgis_path = Path(python_executable).parent
+    qgis_path = Path(sys.executable).parent
 
-    if sys.platform == "win32":
-        for candidate in (qgis_path / "python3.exe", qgis_path / "python.exe"):
-            if candidate.exists():
-                return str(candidate)
-        return python_executable
+    major, minor, _ = platform.python_version_tuple()
 
-    if sys.platform == "darwin":
-        wrapper = qgis_path / "python"
-        if wrapper.exists():
-            return str(wrapper)
+    search_paths = [qgis_path]
+    suffix = ""
 
-        for candidate in (qgis_path / "python3.12", qgis_path / "python3"):
-            if candidate.exists():
-                return str(candidate)
+    if platform.system() == "Windows":
+        suffix = ".exe"
 
-        return python_executable
+    if platform.system() == "Darwin":
+        search_paths.append(qgis_path / "bin")  # brew
 
-    # linux/other
+    python_executable = None
+    for search_path in search_paths:
+        for candidate in (
+            search_path / f"python{major}.{minor}{suffix}",
+            search_path / f"python{major}{suffix}",
+            search_path / f"python{suffix}",
+        ):
+            if not candidate.exists():
+                continue
+
+            python_executable = str(candidate)
+            break
+
+    if python_executable is None:
+        raise DevToolsError("Python is not found")
+
     return python_executable
 
 
