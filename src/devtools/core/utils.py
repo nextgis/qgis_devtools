@@ -60,6 +60,9 @@ def python_path() -> str:
     if platform.system() == "Windows":
         suffix = ".exe"
 
+        conda_python_path = qgis_path.parent.parent  # conda / pixi
+        search_paths.append(conda_python_path)
+
     if platform.system() == "Darwin":
         search_paths.append(qgis_path / "bin")  # brew
 
