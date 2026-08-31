@@ -523,7 +523,7 @@ class QgisPluginBuilder:
         system = platform.system()
 
         if qgis in ("Vanilla", "VanillaFlatpak"):
-            qgis_profiles = Path("QGIS/QGIS3/profiles")
+            qgis_profiles = Path("QGIS/QGIS4/profiles")
         elif qgis in ("NextGIS", "NextGISFlatpak"):
             qgis_profiles = Path("NextGIS/ngqgis/profiles")
         else:
