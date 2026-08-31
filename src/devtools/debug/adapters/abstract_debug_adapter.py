@@ -80,6 +80,18 @@ class AbstractDebugAdapter(QObject, metaclass=QObjectMetaClass):
         """
         ...
 
+    @property
+    @abstractmethod
+    def supports_stop(self) -> bool:
+        """Return whether the active debugging session can be stopped."""
+        ...
+
+    @property
+    @abstractmethod
+    def supports_restart(self) -> bool:
+        """Return whether a stopped debugging session can be restarted."""
+        ...
+
     @abstractmethod
     def can_start(self) -> Tuple[bool, Optional[str]]:
         """Check if the debug adapter can be started.
@@ -108,6 +120,11 @@ class AbstractDebugAdapter(QObject, metaclass=QObjectMetaClass):
         This method should be implemented by subclasses to stop the debugging
         process.
         """
+        ...
+
+    @abstractmethod
+    def unload(self) -> None:
+        """Release adapter resources before deleting its QObject."""
         ...
 
     @abstractmethod

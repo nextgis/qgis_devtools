@@ -27,7 +27,6 @@ class DebugpyHandler:
         """Initialize the optional debugpy integration."""
         self.__debugpy: Any = None
         self.__debugpy_internal: Any = None
-        self.__pydevd: Any = None
         self.__log_directory: Optional[Path] = None
         self.__version: Optional[str] = None
 
@@ -36,11 +35,9 @@ class DebugpyHandler:
 
         import debugpy  # noqa: PLC0415
         import debugpy.server.api as debugpy_internal  # noqa: PLC0415
-        from debugpy._vendored.pydevd import pydevd  # noqa: PLC0415
 
         self.__debugpy = debugpy
         self.__debugpy_internal = debugpy_internal
-        self.__pydevd = pydevd
         self.__version = getattr(debugpy, "__version__", "unknown")
 
         if not hasattr(self.__debugpy_internal.listen, "called"):
@@ -73,10 +70,6 @@ class DebugpyHandler:
         )
         self.__debugpy_internal.listen.called = True
         return result_endpoint
-
-    def stop(self) -> None:
-        """Stop debugpy tracing."""
-        self.__pydevd.stoptrace()
 
     def breakpoint(self) -> None:
         """Trigger a debugpy breakpoint."""

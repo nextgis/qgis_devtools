@@ -73,6 +73,7 @@ class DebugManager(DebugInterface):
         self._current_adapter_index = -1
         self.__debug_current_script_button = None
         self.__python_console = None
+        self.__has_started_session = False
 
     @property
     def adapter(self) -> Optional["AbstractDebugAdapter"]:
@@ -97,6 +98,18 @@ class DebugManager(DebugInterface):
             logger.info(self.tr("Debug already started"))
             return
 
+        if self.__has_started_session and not self.adapter.supports_restart:
+            logger.warning(
+                "The active debug adapter does not support restarting"
+            )
+            return
+
+        can_start, reason = self.adapter.can_start()
+        if not can_start:
+            logger.warning(reason or "The active debug adapter cannot start")
+            self.__update_control_button_state(self.adapter.state)
+            return
+
         try:
             self.adapter.start()
         except Exception as error:
@@ -106,6 +119,12 @@ class DebugManager(DebugInterface):
     @pyqtSlot()
     def stop(self) -> None:
         """Stop the debug session."""
+        if not self.adapter.supports_stop:
+            logger.warning(
+                "The active debug adapter does not support stopping"
+            )
+            return
+
         self.adapter.stop()
 
     @pyqtSlot()
@@ -114,6 +133,11 @@ class DebugManager(DebugInterface):
 
         :param script_path: Path to the script to debug.
         """
+        if self.adapter.state == DebugState.STOPPED:
+            self.start()
+            if self.adapter.state == DebugState.STOPPED:
+                return
+
         self.adapter.debug_script(script_path)
 
     def breakpoint(self) -> None:
@@ -135,7 +159,7 @@ class DebugManager(DebugInterface):
         # self._plugin.settings_changed.connect(self.__reload)
 
         settings = DebugSettings()
-        if settings.auto_start:
+        if settings.auto_start and self.adapter.can_start()[0]:
             self.start()
 
     def unload(self) -> None:
@@ -143,8 +167,13 @@ class DebugManager(DebugInterface):
         # self._plugin.settings_changed.disconnect(self.__reload)
 
         self.__unload_settings_page()
+        if (
+            self.adapter.supports_stop
+            and self.adapter.state != DebugState.STOPPED
+        ):
+            self.adapter.stop()
+        self.adapter.unload()
         self.__remove_button()
-        self.adapter.stop()
         for adapter in self._adapters:
             adapter.deleteLater()
         self._adapters = []
@@ -202,6 +231,9 @@ class DebugManager(DebugInterface):
     def __add_button(self) -> None:
         self._debug_control_button = DebugButton()
         self._debug_control_button.set_adapter_name(self.adapter.name())
+        self._debug_control_button.set_adapter_capabilities(
+            self.adapter.supports_stop, self.adapter.supports_restart
+        )
         self._debug_control_button.toggle_debug_state.connect(
             self.__toggle_debug_state
         )
@@ -244,12 +276,21 @@ class DebugManager(DebugInterface):
     def __update_control_button_state(self, state: DebugState) -> None:
         self._debug_control_button.set_state(state)
 
-        if state == DebugState.STOPPED:
-            ok, reason = self.adapter.can_start()
-            if ok:
-                self._debug_control_button.unblock_start()
-            else:
-                self._debug_control_button.block_start(reason)
+        if state != DebugState.STOPPED:
+            self.__has_started_session = True
+            return
+
+        if self.__has_started_session and not self.adapter.supports_restart:
+            self._debug_control_button.block_start(
+                self.tr("Restarting is not supported by this debug adapter.")
+            )
+            return
+
+        ok, reason = self.adapter.can_start()
+        if ok:
+            self._debug_control_button.unblock_start()
+        else:
+            self._debug_control_button.block_start(reason)
 
     @pyqtSlot()
     def __debug_current_script(self) -> None:

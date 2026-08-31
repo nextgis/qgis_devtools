@@ -105,5 +105,6 @@ class DevToolsPluginStub(DevToolsInterface):
 
     def _unload(self) -> None:
         """Unload the plugin resources and clean up components."""
+        self.__notifier.dismiss_all()
         self.__notifier.deleteLater()
         self.__notifier = None

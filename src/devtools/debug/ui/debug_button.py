@@ -64,6 +64,9 @@ class DebugButton(QToolButton):
         :type parent: Optional[QWidget]
         """
         super().__init__(parent)
+        self.__state = DebugState.STOPPED
+        self.__supports_stop = True
+        self.__supports_restart = True
         self.__load_ui()
 
     @pyqtSlot(DebugState)
@@ -74,6 +77,7 @@ class DebugButton(QToolButton):
         :type state: DebugState
         :raises NotImplementedError: If state is unknown.
         """
+        self.__state = state
         status_label_text = self.tr("<b>Status:</b> ")
 
         start_stop_button: QPushButton = self.__status_widget.start_stop_button
@@ -85,6 +89,7 @@ class DebugButton(QToolButton):
             self.setToolTip("Debugging is stopped")
             status_label_text += self.tr("stopped")
             start_stop_button.setText(self.tr("Start"))
+            start_stop_button.setToolTip("")
 
         elif state == DebugState.RUNNING:
             self.setIcon(
@@ -93,6 +98,7 @@ class DebugButton(QToolButton):
             self.setToolTip("Client is not connected to debugger")
             status_label_text += self.tr("running")
             start_stop_button.setText(self.tr("Stop"))
+            self.__set_stop_button_availability(start_stop_button)
 
         elif state == DebugState.RUNNING_AND_USER_CONNECTED:
             self.setIcon(
@@ -101,12 +107,25 @@ class DebugButton(QToolButton):
             self.setToolTip("Client is connected to debugger")
             status_label_text += self.tr("client connected")
             start_stop_button.setText(self.tr("Stop"))
+            self.__set_stop_button_availability(start_stop_button)
 
         else:
             raise NotImplementedError
 
         status_label: QLabel = self.__status_widget.status_label
         status_label.setText(status_label_text)
+
+    def set_adapter_capabilities(
+        self, supports_stop: bool, supports_restart: bool
+    ) -> None:
+        """Set the debugging operations supported by the selected adapter.
+
+        :param supports_stop: Whether the active debug session can be stopped.
+        :param supports_restart: Whether a stopped debug session can restart.
+        """
+        self.__supports_stop = supports_stop
+        self.__supports_restart = supports_restart
+        self.set_state(self.__state)
 
     def set_adapter_name(self, adapter_name: str) -> None:
         """Set the name of the current debug adapter in the UI.
@@ -134,6 +153,25 @@ class DebugButton(QToolButton):
         """Unblock the start button and hide the warning."""
         self.__status_widget.start_stop_button.setEnabled(True)
         self.__status_widget.warning_label.hide()
+
+    def __set_stop_button_availability(
+        self, start_stop_button: QPushButton
+    ) -> None:
+        start_stop_button.setEnabled(self.__supports_stop)
+        if self.__supports_stop:
+            start_stop_button.setToolTip("")
+            return
+
+        if self.__supports_restart:
+            tooltip = self.tr(
+                "Stopping is not supported by this debug adapter."
+            )
+        else:
+            tooltip = self.tr(
+                "This debug adapter cannot be stopped or restarted. "
+                "Restart QGIS to stop debugging."
+            )
+        start_stop_button.setToolTip(tooltip)
 
     def __load_ui(self) -> None:
         self.setCheckable(True)

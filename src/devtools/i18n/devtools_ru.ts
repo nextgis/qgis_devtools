@@ -139,6 +139,16 @@ p, li { white-space: pre-wrap; }
         <translation>Остановить</translation>
     </message>
     <message>
+        <location filename="../debug/ui/debug_button.py" line="167"/>
+        <source>Stopping is not supported by this debug adapter.</source>
+        <translation>Остановка не поддерживается этим адаптером отладки.</translation>
+    </message>
+    <message>
+        <location filename="../debug/ui/debug_button.py" line="171"/>
+        <source>This debug adapter cannot be stopped or restarted. Restart QGIS to stop debugging.</source>
+        <translation>Этот адаптер отладки нельзя остановить или перезапустить. Для остановки отладки перезапустите QGIS.</translation>
+    </message>
+    <message>
         <location filename="../debug/ui/debug_button.py" line="102"/>
         <source>client connected</source>
         <translation>клиент подключён</translation>
@@ -160,6 +170,11 @@ p, li { white-space: pre-wrap; }
         <location filename="../debug/debug_manager.py" line="97"/>
         <source>Debug already started</source>
         <translation>Отладка уже запущена</translation>
+    </message>
+    <message>
+        <location filename="../debug/debug_manager.py" line="281"/>
+        <source>Restarting is not supported by this debug adapter.</source>
+        <translation>Перезапуск не поддерживается этим адаптером отладки.</translation>
     </message>
     <message>
         <location filename="../debug/debug_manager.py" line="162"/>

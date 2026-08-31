@@ -63,6 +63,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
     __state: DebugState
     __timer: QTimer
+    __start_notification_timer: QTimer
 
     __active_hostname: Optional[str]
     __active_port: Optional[int]
@@ -84,6 +85,11 @@ class DebugpyAdapter(AbstractDebugAdapter):
         self.__timer = QTimer(self)
         self.__timer.setInterval(1000)  # 1s
         self.__timer.timeout.connect(self.__update_connected_state)
+        self.__start_notification_timer = QTimer(self)
+        self.__start_notification_timer.setSingleShot(True)
+        self.__start_notification_timer.timeout.connect(
+            self.__show_start_notification
+        )
 
         self.__active_hostname = None
         self.__active_port = None
@@ -130,6 +136,16 @@ class DebugpyAdapter(AbstractDebugAdapter):
         :rtype: bool
         """
         return self.__handler.is_installed
+
+    @property
+    def supports_stop(self) -> bool:
+        """Return whether debugpy can stop its process-global server."""
+        return False
+
+    @property
+    def supports_restart(self) -> bool:
+        """Return whether debugpy can restart in the same QGIS process."""
+        return False
 
     def can_start(self) -> Tuple[bool, Optional[str]]:
         """Check if the debug adapter can be started.
@@ -180,9 +196,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
         """
         if not self.is_installed:
             error = DebugLibraryNotInstalledError("debugpy")
-            error.add_action(
-                self.tr("User Guide"), lambda: self.open_docs.emit()
-            )
+            error.add_action(self.tr("User Guide"), self.open_docs.emit)
             raise error
 
         settings = DebugpySettings()
@@ -212,7 +226,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
         if settings.show_notification:
             # Delayed notification to avoid bug with unusable messages
             # when adding before UI is loaded
-            QTimer.singleShot(0, self.__show_start_notification)
+            self.__start_notification_timer.start(0)
         else:
             logger.info(
                 self.tr("Debug session started at {hostname}:{port}").format(
@@ -221,28 +235,21 @@ class DebugpyAdapter(AbstractDebugAdapter):
             )
 
         self.__timer.start()
-        self.state_changed.emit(DebugState.RUNNING)
+        self.__set_state(DebugState.RUNNING)
 
     @pyqtSlot()
     def stop(self) -> None:
-        """Stop the debug session.
+        """Leave the process-global debugpy server running.
 
-        :raises DebugLibraryNotInstalledError: If debugpy is not installed.
+        debugpy remains active until QGIS exits. It has no supported shutdown
+        API, and calling vendored pydevd internals during disconnect is unsafe.
         """
-        if not self.is_installed:
-            raise DebugLibraryNotInstalledError("debugpy")
+        return
 
+    def unload(self) -> None:
+        """Stop adapter-owned timers before its QObject is deleted."""
         self.__timer.stop()
-        self.__handler.stop()
-
-        self.__active_hostname = None
-        self.__active_port = None
-
-        if self.__message_id is not None:
-            notifier = DevToolsInterface.instance().notifier
-            notifier.dismiss_message(self.__message_id)
-
-        self.__set_state(DebugState.STOPPED)
+        self.__start_notification_timer.stop()
 
     def debug_script(self, script_path: Union[str, Path]) -> None:
         """Debug the script.
@@ -290,9 +297,14 @@ class DebugpyAdapter(AbstractDebugAdapter):
             def checker() -> None:
                 if self.state == DebugState.RUNNING_AND_USER_CONNECTED:
                     dialog.accept()
+                elif self.state == DebugState.STOPPED:
+                    dialog.reject()
 
             self.state_changed.connect(checker)
-            dialog.exec()
+            try:
+                dialog.exec()
+            finally:
+                self.state_changed.disconnect(checker)
 
             if dialog.result() != WaitingDialog.DialogCode.Accepted:
                 return
@@ -454,6 +466,9 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
     @pyqtSlot()
     def __show_start_notification(self) -> None:
+        if self.state == DebugState.STOPPED:
+            return
+
         copy_params_button = FlashingToolButton(
             self.tr("Copy launch.json template"), self.tr("Copied!")
         )

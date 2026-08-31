@@ -188,6 +188,7 @@ class DevToolsPlugin(DevToolsInterface):
         #     self.__toolbar = None
 
         if self.__notifier is not None:
+            self.__notifier.dismiss_all()
             self.__notifier.deleteLater()
             self.__notifier = None
 

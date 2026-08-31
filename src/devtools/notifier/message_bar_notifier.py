@@ -68,10 +68,6 @@ class MessageBarNotifier(NotifierInterface):
         """
         super().__init__(parent)
 
-    def __del__(self) -> None:
-        """Dismiss all messages on object deletion."""
-        self.dismiss_all()
-
     def display_message(
         self,
         message: str,
