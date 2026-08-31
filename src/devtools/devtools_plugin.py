@@ -37,11 +37,13 @@ from qgis.utils import iface
 from devtools.core import utils
 from devtools.core.compat import parse_version
 from devtools.core.constants import MENU_NAME, PACKAGE_NAME, PLUGIN_NAME
+from devtools.core.exceptions import DevToolsError
 from devtools.core.logging import logger
 from devtools.core.settings import DevToolsSettings
 from devtools.debug.debug_manager import DebugManager
 from devtools.devtools_interface import DevToolsInterface
 from devtools.notifier.message_bar_notifier import MessageBarNotifier
+from devtools.platform.debugpy_handler import DebugpyHandler
 from devtools.ui.about_dialog import AboutDialog
 from devtools.ui.devtools_settings_page import DevToolsSettingsPageFactory
 from devtools.ui.utils import plugin_icon
@@ -80,7 +82,19 @@ class DevToolsPlugin(DevToolsInterface):
         logger.debug(f"<b>ⓘ OS:</b> {QSysInfo().prettyProductName()}")
         logger.debug(f"<b>ⓘ Qt version:</b> {QT_VERSION_STR}")
         logger.debug(f"<b>ⓘ QGIS version:</b> {Qgis.version()}")
+        logger.debug(
+            "<b>ⓘ QGIS application path:</b> "
+            f"{QgsApplication.applicationDirPath()}"
+        )
         logger.debug(f"<b>ⓘ Python version:</b> {sys.version}")
+        try:
+            logger.debug(f"<b>ⓘ Debug Python path:</b> {utils.python_path()}")
+        except DevToolsError:
+            logger.warning("<b>PYTHON PATH NOT FOUND</b>")
+        debugpy_handler = DebugpyHandler()
+        logger.debug(
+            f"<b>ⓘ debugpy version:</b> {debugpy_handler.version or 'not installed'}"
+        )
         logger.debug(f"<b>ⓘ GDAL version:</b> {gdal.__version__}")
         logger.debug(f"<b>ⓘ Plugin version:</b> {self.version}")
         logger.debug(

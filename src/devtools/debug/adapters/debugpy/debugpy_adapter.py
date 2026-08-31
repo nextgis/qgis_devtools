@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import importlib.util
 import json
 import runpy
+import shutil
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
@@ -26,6 +27,7 @@ from qgis.utils import iface
 
 from devtools.core.enums import Ide
 from devtools.core.logging import logger
+from devtools.core.settings import DevToolsSettings
 from devtools.core.utils import python_path, set_clipboard_data
 from devtools.debug.adapters.abstract_debug_adapter import AbstractDebugAdapter
 from devtools.debug.adapters.debugpy.debugpy_settings import DebugpySettings
@@ -39,6 +41,7 @@ from devtools.debug.exceptions import (
     DebugPortInUseError,
 )
 from devtools.devtools_interface import DevToolsInterface
+from devtools.platform.debugpy_handler import DebugpyHandler
 from devtools.shared.ui import (
     FlashingPushButton,
     FlashingToolButton,
@@ -50,14 +53,6 @@ if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QWidget
 
     assert isinstance(iface, QgisInterface)
-
-debugpy = None
-debugpy_internal = None
-pydevd = None
-if importlib.util.find_spec("debugpy"):
-    import debugpy
-    import debugpy.server.api as debugpy_internal
-    from debugpy._vendored.pydevd import pydevd
 
 
 class DebugpyAdapter(AbstractDebugAdapter):
@@ -73,6 +68,8 @@ class DebugpyAdapter(AbstractDebugAdapter):
     __active_port: Optional[int]
 
     __message_id: Optional[str]
+    __handler: DebugpyHandler
+    __log_directory: Optional[Path]
 
     def __init__(self, parent: Optional[QObject] = None) -> None:
         """Initialize DebugpyAdapter instance.
@@ -91,14 +88,12 @@ class DebugpyAdapter(AbstractDebugAdapter):
         self.__active_hostname = None
         self.__active_port = None
         self.__message_id = None
+        self.__handler = DebugpyHandler()
+        self.__log_directory = None
 
         if not self.is_installed:
             logger.debug("debugpy is not installed")
             return
-
-        if not hasattr(debugpy_internal.listen, "called"):
-            # Support for older versions
-            debugpy_internal.listen.called = False  # type: ignore reportFunctionMemberAccess
 
     @classmethod
     def name(cls) -> str:
@@ -134,7 +129,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
         :returns: True if the adapter is installed, False otherwise.
         :rtype: bool
         """
-        return debugpy is not None
+        return self.__handler.is_installed
 
     def can_start(self) -> Tuple[bool, Optional[str]]:
         """Check if the debug adapter can be started.
@@ -148,8 +143,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
         if not self.is_installed:
             error = DebugLibraryNotInstalledError("debugpy")
 
-        elif debugpy_internal.listen.called:  # type: ignore reportFunctionMemberAccess
-            # https://github.com/microsoft/debugpy/blob/1aff9aa541955b967f41895570d4c0b54a7504d9/src/debugpy/server/api.py#L143
+        elif self.__handler.is_started:
             error = DebugAlreadyStartedInProcessError()
 
         if error is not None:
@@ -205,10 +199,15 @@ class DebugpyAdapter(AbstractDebugAdapter):
             (hostname, port) for port in range(port_from, port_to + 1)
         ]
 
-        debugpy.configure(python=python_path())
-        self.__active_hostname, self.__active_port = self.__start_listening(
-            endpoints
-        )
+        try:
+            self.__enable_logging()
+            self.__handler.configure(python_path())
+            self.__active_hostname, self.__active_port = (
+                self.__start_listening(endpoints)
+            )
+        except Exception:
+            self.__log_diagnostics()
+            raise
 
         if settings.show_notification:
             # Delayed notification to avoid bug with unusable messages
@@ -230,11 +229,11 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
         :raises DebugLibraryNotInstalledError: If debugpy is not installed.
         """
-        if debugpy is None:
+        if not self.is_installed:
             raise DebugLibraryNotInstalledError("debugpy")
 
         self.__timer.stop()
-        pydevd.stoptrace()
+        self.__handler.stop()
 
         self.__active_hostname = None
         self.__active_port = None
@@ -309,7 +308,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
     def breakpoint(self) -> None:
         """Toggle breakpoint at the current line."""
-        debugpy.breakpoint()
+        self.__handler.breakpoint()
 
     @classmethod
     def create_settings_widget(
@@ -327,8 +326,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
     def __start_listening(
         self, endpoints: List[Tuple[str, int]]
     ) -> Tuple[str, int]:
-        if debugpy_internal.listen.called:  # type: ignore reportFunctionMemberAccess
-            # https://github.com/microsoft/debugpy/blob/1aff9aa541955b967f41895570d4c0b54a7504d9/src/debugpy/server/api.py#L143
+        if self.__handler.is_started:
             raise DebugAlreadyStartedInProcessError
 
         result_endpoint = ("", -1)
@@ -337,10 +335,7 @@ class DebugpyAdapter(AbstractDebugAdapter):
             logger.debug(f"Try listen at {endpoint}")
 
             try:
-                result_endpoint = debugpy.listen(
-                    endpoint if endpoint[0] else endpoint[-1]
-                )
-                debugpy_internal.listen.called = True  # type: ignore reportFunctionMemberAccess
+                result_endpoint = self.__handler.listen(endpoint)
 
                 break
 
@@ -359,11 +354,86 @@ class DebugpyAdapter(AbstractDebugAdapter):
 
         return result_endpoint
 
+    def __enable_logging(self) -> None:
+        if (
+            self.__log_directory is not None
+            or not DevToolsSettings().is_debug_logs_enabled
+        ):
+            return
+
+        temporary_directory = None
+        try:
+            temporary_directory = Path(
+                tempfile.mkdtemp(prefix="qgis-devtools-debugpy-")
+            )
+            self.__log_directory = self.__handler.enable_logging(
+                temporary_directory
+            )
+        except (OSError, RuntimeError):
+            if temporary_directory is not None:
+                shutil.rmtree(temporary_directory, ignore_errors=True)
+            logger.debug("Can't enable debugpy diagnostics")
+            return
+
+        if self.__log_directory != temporary_directory:
+            shutil.rmtree(temporary_directory, ignore_errors=True)
+        logger.debug(f"debugpy diagnostics directory: {self.__log_directory}")
+
+    def __log_diagnostics(self) -> None:
+        if self.__log_directory is None:
+            return
+
+        try:
+            log_files = self.__handler.diagnostic_log_files()
+        except OSError:
+            logger.exception("Can't list debugpy diagnostic logs")
+            return
+
+        if not log_files:
+            logger.debug("debugpy did not produce diagnostic logs")
+            return
+
+        remaining_log_size = 256 * 1024
+        for log_file in log_files:
+            if remaining_log_size == 0:
+                logger.debug(
+                    "debugpy diagnostics output was truncated at 262144 bytes"
+                )
+                break
+
+            try:
+                with log_file.open("rb") as log_stream:
+                    log_stream.seek(0, 2)
+                    log_size = log_stream.tell()
+                    max_log_size = min(64 * 1024, remaining_log_size)
+                    log_stream.seek(max(log_size - max_log_size, 0))
+                    log_content = (
+                        log_stream.read(max_log_size)
+                        .decode("utf-8", errors="replace")
+                        .strip()
+                    )
+            except OSError:
+                logger.exception(
+                    f"Can't read debugpy diagnostic log: {log_file}"
+                )
+                continue
+
+            remaining_log_size -= min(log_size, max_log_size)
+            if log_content:
+                if log_size > max_log_size:
+                    log_content = (
+                        f"[Only the last {max_log_size} bytes are shown.]\n"
+                        f"{log_content}"
+                    )
+                logger.debug(
+                    f"debugpy diagnostics from {log_file.name}:\n{log_content}"
+                )
+
     @pyqtSlot()
     def __update_connected_state(self) -> None:
         self.__set_state(
             DebugState.RUNNING_AND_USER_CONNECTED
-            if debugpy.is_client_connected()
+            if self.__handler.is_client_connected()
             else DebugState.RUNNING
         )
 
