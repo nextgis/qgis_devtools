@@ -178,12 +178,18 @@ class DebugManager(DebugInterface):
 
         toolbar = cast("QToolBar", python_console.console.toolBarEditor)
         toolbar_actions = toolbar.actions()
-        index = toolbar_actions.index(
-            python_console.console.runScriptEditorButton  # pyright: ignore[reportArgumentType]
+        run_script_action = (
+            python_console.console.run_script_action
+            if hasattr(python_console.console, "run_script_action")
+            else python_console.console.runScriptEditorButton
         )
-        toolbar.insertAction(
-            toolbar_actions[index + 1], self.__debug_current_script_button
-        )
+        index = toolbar_actions.index(run_script_action)
+        if index + 1 < len(toolbar_actions):
+            toolbar.insertAction(
+                toolbar_actions[index + 1], self.__debug_current_script_button
+            )
+        else:
+            toolbar.addAction(self.__debug_current_script_button)
 
     def deintegrate_from_python_console(self) -> None:
         """Deintegrate the debug interface from the Python console."""
