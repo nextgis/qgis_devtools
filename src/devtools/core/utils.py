@@ -25,7 +25,10 @@ from qgis.PyQt.QtCore import QByteArray, QLocale, QMimeData
 from qgis.PyQt.QtGui import QClipboard
 
 from devtools.core.constants import PACKAGE_NAME
-from devtools.core.exceptions import DevToolsError
+from devtools.core.exceptions import (
+    PythonExecutableNotFoundError,
+    QgisServiceUnavailableError,
+)
 
 
 def locale() -> str:
@@ -80,7 +83,7 @@ def python_path() -> str:
             break
 
     if python_executable is None:
-        raise DevToolsError("Python is not found")
+        raise PythonExecutableNotFoundError
 
     return python_executable
 
@@ -107,7 +110,8 @@ def set_clipboard_data(
         mime_data.setText(text)
 
     clipboard = QgsApplication.clipboard()
-    assert clipboard is not None
+    if clipboard is None:
+        raise QgisServiceUnavailableError("clipboard")
     if sys.platform == "linux":
         selection_mode = QClipboard.Mode.Selection
         clipboard.setMimeData(mime_data, selection_mode)

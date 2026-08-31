@@ -95,3 +95,6 @@ extend-ignore-names = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[tool.bandit]
+exclude_dirs = ["tests", "setup.py"]

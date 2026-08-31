@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, see <https://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 from qgis.core import QgsApplication
 from qgis.utils import iface
@@ -25,7 +25,7 @@ from devtools.core.exceptions import DevToolsError
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface
 
-    assert isinstance(iface, QgisInterface)
+    iface = cast("QgisInterface", iface)
 
 
 class DebugError(DevToolsError):

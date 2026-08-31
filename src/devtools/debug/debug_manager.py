@@ -42,7 +42,7 @@ if TYPE_CHECKING:
         AbstractDebugAdapter,
     )
 
-    assert isinstance(iface, QgisInterface)
+    iface = cast("QgisInterface", iface)
 
 
 class DebugManager(DebugInterface):

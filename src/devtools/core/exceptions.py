@@ -206,6 +206,73 @@ class DevToolsError(DevToolsExceptionInfoMixin, Exception):
         Exception.__init__(self, self._log_message)
 
 
+class DevToolsLifecycleError(DevToolsError):
+    """Indicate that a plugin component is accessed outside its lifecycle."""
+
+    def __init__(self, component_name: str) -> None:
+        """Initialize the error.
+
+        :param component_name: Component that is unavailable.
+        """
+        super().__init__(f"{component_name.capitalize()} is not initialized")
+
+
+class PluginMetadataNotInitializedError(DevToolsLifecycleError):
+    """Indicate that plugin metadata is accessed before initialization."""
+
+    def __init__(self) -> None:
+        """Initialize the error."""
+        super().__init__("plugin metadata")
+
+
+class DebugManagerNotInitializedError(DevToolsLifecycleError):
+    """Indicate that the debug manager is accessed before initialization."""
+
+    def __init__(self) -> None:
+        """Initialize the error."""
+        super().__init__("debug manager")
+
+
+class PluginHelpMenuUnavailableError(DevToolsError):
+    """Indicate that the QGIS plugin help menu is unavailable."""
+
+    def __init__(self) -> None:
+        """Initialize the error."""
+        super().__init__("QGIS plugin help menu is not available")
+
+
+class RequiredPluginMetadataError(DevToolsError):
+    """Indicate that a required plugin metadata value is missing."""
+
+    def __init__(self, metadata_name: str) -> None:
+        """Initialize the error.
+
+        :param metadata_name: Name of the missing metadata value.
+        """
+        super().__init__(
+            f"Required plugin metadata is missing: {metadata_name}"
+        )
+
+
+class QgisServiceUnavailableError(DevToolsError):
+    """Indicate that a required QGIS service is unavailable."""
+
+    def __init__(self, service_name: str) -> None:
+        """Initialize the error.
+
+        :param service_name: Name of the unavailable QGIS service.
+        """
+        super().__init__(f"QGIS {service_name} is not available")
+
+
+class PythonExecutableNotFoundError(DevToolsError):
+    """Indicate that the QGIS Python executable could not be found."""
+
+    def __init__(self) -> None:
+        """Initialize the error."""
+        super().__init__("Python is not found")
+
+
 class DevToolsWarning(DevToolsExceptionInfoMixin, UserWarning):
     """Base warning for non-critical issues in the QGIS DevTools plugin.
 

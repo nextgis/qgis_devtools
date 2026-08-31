@@ -17,11 +17,10 @@
 
 import sys
 import textwrap
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 from osgeo import gdal
 from qgis.core import Qgis, QgsApplication
-from qgis.gui import QgisInterface
 from qgis.PyQt.QtCore import (
     QT_VERSION_STR,
     QObject,
@@ -37,7 +36,12 @@ from qgis.utils import iface
 from devtools.core import utils
 from devtools.core.compat import parse_version
 from devtools.core.constants import MENU_NAME, PACKAGE_NAME, PLUGIN_NAME
-from devtools.core.exceptions import DevToolsError
+from devtools.core.exceptions import (
+    DebugManagerNotInitializedError,
+    DevToolsError,
+    DevToolsLifecycleError,
+    PluginHelpMenuUnavailableError,
+)
 from devtools.core.logging import logger
 from devtools.core.settings import DevToolsSettings
 from devtools.debug.debug_manager import DebugManager
@@ -49,10 +53,12 @@ from devtools.ui.devtools_settings_page import DevToolsSettingsPageFactory
 from devtools.ui.utils import plugin_icon
 
 if TYPE_CHECKING:
+    from qgis.gui import QgisInterface
+
     from devtools.debug.debug_interface import DebugInterface
     from devtools.notifier.notifier_interface import NotifierInterface
 
-assert isinstance(iface, QgisInterface)
+    iface = cast("QgisInterface", iface)
 
 
 class DevToolsPlugin(DevToolsInterface):
@@ -131,9 +137,10 @@ class DevToolsPlugin(DevToolsInterface):
 
         :returns: Notifier interface instance.
         :rtype: NotifierInterface
-        :raises AssertionError: If notifier is not initialized.
+        :raises DevToolsLifecycleError: If notifier is not initialized.
         """
-        assert self.__notifier is not None, "Notifier is not initialized"
+        if self.__notifier is None:
+            raise DevToolsLifecycleError("notifier")
         return self.__notifier
 
     @property
@@ -142,11 +149,10 @@ class DevToolsPlugin(DevToolsInterface):
 
         :returns: Debug manager instance.
         :rtype: DebugInterface
-        :raises AssertionError: If debug manager is not initialized.
+        :raises DevToolsLifecycleError: If debug manager is not initialized.
         """
-        assert self.__debug_manager is not None, (
-            "Debug manager is not initialized"
-        )
+        if self.__debug_manager is None:
+            raise DebugManagerNotInitializedError
         return self.__debug_manager
 
     def _load(self) -> None:
@@ -209,7 +215,8 @@ class DevToolsPlugin(DevToolsInterface):
         )
 
         plugin_help_menu = iface.pluginHelpMenu()
-        assert plugin_help_menu is not None
+        if plugin_help_menu is None:
+            raise PluginHelpMenuUnavailableError
         plugin_help_menu.addAction(self.__about_plugin_help_action)  # type: ignore reportCallIssue
 
     def __unload_about_dialog_actions(self) -> None:

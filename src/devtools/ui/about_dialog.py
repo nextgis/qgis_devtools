@@ -27,6 +27,8 @@ from qgis.PyQt.QtGui import QDesktopServices, QIcon, QPixmap
 from qgis.PyQt.QtWidgets import QDialog, QLabel, QWidget
 from qgis.utils import pluginMetadata
 
+from devtools.core.exceptions import RequiredPluginMetadataError
+
 QT_MAJOR_VERSION = int(QT_VERSION_STR.split(".")[0])
 if QT_MAJOR_VERSION < 6:  # noqa: PLR2004
     from qgis.PyQt.QtSvg import QSvgWidget
@@ -131,7 +133,8 @@ class AboutDialog(QDialog, Ui_AboutDialogBase):
 
     def __fill_headers(self, metadata: Dict[str, Optional[str]]) -> None:
         plugin_name = metadata["plugin_name"]
-        assert isinstance(plugin_name, str)
+        if not isinstance(plugin_name, str):
+            raise RequiredPluginMetadataError("name")
         if "NextGIS" not in plugin_name:
             plugin_name += self.tr(" by NextGIS")
 
@@ -240,7 +243,8 @@ class AboutDialog(QDialog, Ui_AboutDialogBase):
             return value
 
         about = metadata_value("about")
-        assert about is not None
+        if about is None:
+            raise RequiredPluginMetadataError("about")
         for about_stop_phrase in (
             "Desarrollado por",
             "Desenvolvido por",

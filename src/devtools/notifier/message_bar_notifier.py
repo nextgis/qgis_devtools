@@ -17,7 +17,7 @@
 
 import re
 import uuid
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
 from qgis.core import Qgis
 from qgis.PyQt.QtCore import QObject, QUrl
@@ -35,7 +35,7 @@ from devtools.notifier.notifier_interface import NotifierInterface
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface
 
-    assert isinstance(iface, QgisInterface)
+    iface = cast("QgisInterface", iface)
 
 
 def let_us_know() -> None:

@@ -19,7 +19,7 @@ import runpy
 import shutil
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union, cast
 
 from qgis.PyQt.QtCore import QObject, QTimer, pyqtSlot
 from qgis.PyQt.QtWidgets import QMenu, QMessageBox
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     from qgis.gui import QgisInterface, QgsOptionsPageWidget
     from qgis.PyQt.QtWidgets import QWidget
 
-    assert isinstance(iface, QgisInterface)
+    iface = cast("QgisInterface", iface)
 
 
 class DebugpyAdapter(AbstractDebugAdapter):

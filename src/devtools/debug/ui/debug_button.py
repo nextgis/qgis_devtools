@@ -15,7 +15,7 @@
 # with this program; if not, see <https://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
@@ -37,7 +37,7 @@ from devtools.ui.utils import draw_icon, material_icon
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface
 
-    assert isinstance(iface, QgisInterface)
+    iface = cast("QgisInterface", iface)
 
 
 class DebugButton(QToolButton):

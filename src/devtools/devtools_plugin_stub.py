@@ -16,11 +16,10 @@
 
 
 import sys
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 from osgeo import gdal
 from qgis.core import Qgis
-from qgis.gui import QgisInterface
 from qgis.PyQt.QtCore import (
     QT_VERSION_STR,
     QObject,
@@ -30,17 +29,19 @@ from qgis.utils import iface
 
 from devtools.core import utils
 from devtools.core.constants import PACKAGE_NAME
+from devtools.core.exceptions import DevToolsLifecycleError
 from devtools.core.logging import logger
 from devtools.devtools_interface import DevToolsInterface
 from devtools.notifier.message_bar_notifier import MessageBarNotifier
 
 if TYPE_CHECKING:
+    from qgis.gui import QgisInterface
     from qgis.PyQt.QtWidgets import QToolBar
 
     from devtools.debug.debug_interface import DebugInterface
     from devtools.notifier.notifier_interface import NotifierInterface
 
-assert isinstance(iface, QgisInterface)
+    iface = cast("QgisInterface", iface)
 
 
 class DevToolsPluginStub(DevToolsInterface):
@@ -84,7 +85,8 @@ class DevToolsPluginStub(DevToolsInterface):
         :returns: Notifier interface instance.
         :rtype: NotifierInterface
         """
-        assert self.__notifier is not None, "Notifier is not initialized"
+        if self.__notifier is None:
+            raise DevToolsLifecycleError("notifier")
         return self.__notifier
 
     @property

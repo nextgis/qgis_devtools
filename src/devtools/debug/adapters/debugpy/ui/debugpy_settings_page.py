@@ -136,7 +136,7 @@ class DebugpySettingsPage(QgsOptionsPageWidget):
             self.from_spinbox.setValue(value)
 
     @pyqtSlot(bool)
-    def __on_auto_select_checkbox_toggled(self, checked: bool) -> None:  # noqa: FBT001
+    def __on_auto_select_checkbox_toggled(self, checked: bool) -> None:
         """Enable or disable spinboxes based on auto_select_checkbox state.
 
         :param checked: Checkbox state

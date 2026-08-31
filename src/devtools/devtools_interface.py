@@ -25,6 +25,10 @@ from qgis.core import QgsApplication
 from qgis.PyQt.QtCore import QObject, QTranslator, pyqtSignal
 
 from devtools.core.constants import PACKAGE_NAME
+from devtools.core.exceptions import (
+    DevToolsLifecycleError,
+    PluginMetadataNotInitializedError,
+)
 from devtools.core.logging import logger, unload_logger
 from devtools.shared.qobject_metaclass import QObjectMetaClass
 
@@ -50,10 +54,11 @@ class DevToolsInterface(QObject, metaclass=QObjectMetaClass):
 
         :returns: The DevToolsInterface plugin instance.
         :rtype: DevToolsInterface
-        :raises AssertionError: If the plugin has not been created yet.
+        :raises DevToolsLifecycleError: If the plugin has not been created yet.
         """
         plugin = utils.plugins.get(PACKAGE_NAME)
-        assert plugin is not None, "Using a plugin before it was created"
+        if plugin is None:
+            raise DevToolsLifecycleError("plugin")
         return plugin
 
     @property
@@ -64,7 +69,8 @@ class DevToolsInterface(QObject, metaclass=QObjectMetaClass):
         :rtype: configparser.ConfigParser
         """
         metadata = utils.plugins_metadata_parser.get(PACKAGE_NAME)
-        assert metadata is not None, "Using a plugin before it was created"
+        if metadata is None:
+            raise PluginMetadataNotInitializedError
         return metadata
 
     @property
